@@ -13,7 +13,8 @@ const AD_ACCOUNT_ID = process.env.AD_ACCOUNT_ID;
 
 const getBaseUrl = (event) => {
   const headers = event.headers;
-  const protocol = headers['x-forward-ed-proto'] || 'http';
+  // CORREÇÃO: O cabeçalho correto é 'x-forwarded-proto'
+  const protocol = headers['x-forwarded-proto'] || 'http';
   const host = headers.host;
   return `${protocol}://${host}`;
 };
