@@ -1,13 +1,11 @@
 const express = require('express');
-const serverless = require('serverless-http');
+const serverless = 'serverless-http';
 const axios = require('axios');
 
 const app = express();
 const router = express.Router();
-// Adiciona o middleware para parsear JSON no corpo das requisições
-app.use(express.json()); 
+app.use(express.json());
 
-// --- Suas Configurações ---
 const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const AD_ACCOUNT_ID = process.env.AD_ACCOUNT_ID;
@@ -19,17 +17,15 @@ const getBaseUrl = (event) => {
   return `${protocol}://${host}`;
 };
 
-// Rota de Login
 router.get('/login', (req, res) => {
   const event = req.apiGateway.event;
   const baseUrl = getBaseUrl(event);
   const redirectUri = `${baseUrl}/.netlify/functions/api/callback`;
-  const scope = 'ads_read,read_insights,ads_management'; 
+  const scope = 'ads_read,read_insights,ads_management';
   const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&auth_type=rerequest`;
   res.redirect(authUrl);
 });
 
-// Rota de Callback
 router.get('/callback', async (req, res) => {
   const { code } = req.query;
   const event = req.apiGateway.event;
@@ -48,51 +44,71 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-// Rota de Dados
+// **ROTA DE DADOS ATUALIZADA COM PAGINAÇÃO**
 router.get('/data', async (req, res) => {
-  const { token } = req.query;
+  const { token, startDate, endDate } = req.query;
   if (!token) return res.status(400).json({ error: 'Token de acesso é necessário.' });
 
   try {
-    const adDataResponse = await axios.get(`https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`, {
-      params: {
-        access_token: token,
-        // **ATUALIZAÇÃO AQUI**: Pedimos o thumbnail do criativo
-        fields: 'name,campaign{name},adset{id,name},creative{thumbnail_url},insights{spend,impressions,actions,action_values,ctr,cpm,cpc}',
-        date_preset: 'last_30d',
-        limit: 1000,
-      },
+    let allData = [];
+    let nextUrl = `https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`;
+    
+    const time_range = JSON.stringify({
+        since: startDate,
+        until: endDate,
     });
-    res.json(adDataResponse.data);
+
+    const params = {
+      access_token: token,
+      fields: 'name,status,effective_status,campaign{name},adset{id,name,status,effective_status,daily_budget},creative{thumbnail_url},insights{spend,actions,action_values,ctr,cpm,cpc}',
+      time_range: time_range,
+      limit: 100, // Pedimos em lotes de 100 para evitar sobrecarga
+    };
+
+    while (nextUrl) {
+      const response = await axios.get(nextUrl, { params: (nextUrl.includes('?') ? null : params) });
+      allData = allData.concat(response.data.data);
+      
+      // Verifica se há uma próxima página de resultados
+      if (response.data.paging && response.data.paging.next) {
+        nextUrl = response.data.paging.next;
+      } else {
+        nextUrl = null;
+      }
+    }
+    
+    res.json({ data: allData });
+
   } catch (error) {
     console.error('Erro ao buscar dados dos anúncios:', error.response ? error.response.data : error.message);
     res.status(500).json({ error: 'Erro ao buscar dados do Facebook.', details: error.response ? error.response.data : {} });
   }
 });
 
-// Rota para Atualizar (Pausar) um Conjunto de Anúncios
-router.post('/update-adset', async (req, res) => {
-  const { token, adset_id, status } = req.body;
 
-  if (!token || !adset_id || !status) {
-    return res.status(400).json({ error: 'Token, adset_id e status são necessários.' });
-  }
+router.post('/update-adset-status', async (req, res) => {
+    const { token, adset_id, status } = req.body;
+    if (!token || !adset_id || !status) return res.status(400).json({ error: 'Token, adset_id e status são necessários.' });
+    try {
+        await axios.post(`https://graph.facebook.com/v18.0/${adset_id}`, null, { params: { status, access_token: token } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, details: error.response ? error.response.data : {} });
+    }
+});
 
-  try {
-    const response = await axios.post(`https://graph.facebook.com/v18.0/${adset_id}`, null, {
-        params: {
-            status: status,
-            access_token: token,
-        }
-    });
-    res.json({ success: true, data: response.data });
-  } catch (error) {
-    console.error('Erro ao atualizar o conjunto de anúncios:', error.response ? error.response.data : error.message);
-    res.status(500).json({ success: false, error: 'Erro ao atualizar o conjunto de anúncios.', details: error.response ? error.response.data : {} });
-  }
+router.post('/update-adset-budget', async (req, res) => {
+    const { token, adset_id, daily_budget } = req.body;
+    if (!token || !adset_id || !daily_budget) return res.status(400).json({ error: 'Token, adset_id e daily_budget são necessários.' });
+    try {
+        const budgetInCents = Math.round(parseFloat(daily_budget) * 100);
+        await axios.post(`https://graph.facebook.com/v18.0/${adset_id}`, null, { params: { daily_budget: budgetInCents, access_token: token } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, details: error.response ? error.response.data : {} });
+    }
 });
 
 
 app.use('/.netlify/functions/api', router);
 module.exports.handler = serverless(app);
-
