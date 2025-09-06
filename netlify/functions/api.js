@@ -1,5 +1,5 @@
 const express = require('express');
-const serverless = 'serverless-http';
+const serverless = require('serverless-http'); // CORREÇÃO AQUI
 const axios = require('axios');
 
 const app = express();
@@ -44,7 +44,6 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-// **ROTA DE DADOS ATUALIZADA COM PAGINAÇÃO**
 router.get('/data', async (req, res) => {
   const { token, startDate, endDate } = req.query;
   if (!token) return res.status(400).json({ error: 'Token de acesso é necessário.' });
@@ -62,14 +61,13 @@ router.get('/data', async (req, res) => {
       access_token: token,
       fields: 'name,status,effective_status,campaign{name},adset{id,name,status,effective_status,daily_budget},creative{thumbnail_url},insights{spend,actions,action_values,ctr,cpm,cpc}',
       time_range: time_range,
-      limit: 100, // Pedimos em lotes de 100 para evitar sobrecarga
+      limit: 100, 
     };
 
     while (nextUrl) {
       const response = await axios.get(nextUrl, { params: (nextUrl.includes('?') ? null : params) });
       allData = allData.concat(response.data.data);
       
-      // Verifica se há uma próxima página de resultados
       if (response.data.paging && response.data.paging.next) {
         nextUrl = response.data.paging.next;
       } else {
@@ -112,3 +110,4 @@ router.post('/update-adset-budget', async (req, res) => {
 
 app.use('/.netlify/functions/api', router);
 module.exports.handler = serverless(app);
+
