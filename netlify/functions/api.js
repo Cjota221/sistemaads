@@ -13,7 +13,7 @@ const AD_ACCOUNT_ID = process.env.AD_ACCOUNT_ID;
 
 const getBaseUrl = (event) => {
   const headers = event.headers;
-  const protocol = headers['x-forwarded-proto'] || 'http';
+  const protocol = headers['x-forward-ed-proto'] || 'http';
   const host = headers.host;
   return `${protocol}://${host}`;
 };
@@ -52,26 +52,57 @@ router.get('/callback', async (req, res) => {
   }
 });
 
-// Rota de Dados
+/**
+ * Função recursiva para buscar todos os dados da API do Facebook usando paginação.
+ * Isso evita erros de "muitos dados" ao buscar os resultados em lotes.
+ * @param {string} url - A URL da API para buscar.
+ * @param {Array} allData - O array acumulado de dados de chamadas anteriores.
+ * @returns {Promise<Array>} - Uma promessa que resolve com todos os dados agregados.
+ */
+const fetchAllPages = async (url, allData = []) => {
+  try {
+    const response = await axios.get(url);
+    const data = response.data.data;
+    allData.push(...data);
+
+    // Se a resposta da API incluir um URL para a "próxima" página, busca recursivamente.
+    if (response.data.paging && response.data.paging.next) {
+      return await fetchAllPages(response.data.paging.next, allData);
+    } else {
+      // Caso contrário, retorna todos os dados coletados.
+      return allData;
+    }
+  } catch (error) {
+    console.error('Erro durante a busca paginada:', error.response ? error.response.data : error.message);
+    // Propaga o erro para ser tratado pela rota principal.
+    throw error;
+  }
+};
+
+
+// Rota de Dados ATUALIZADA com Paginação e Filtro de Datas
 router.get('/data', async (req, res) => {
-  const { token } = req.query;
+  const { token, startDate, endDate } = req.query;
   if (!token) {
     return res.status(400).json({ error: 'Token de acesso é necessário.' });
   }
+  
+  // Utiliza as datas do frontend para criar um `time_range` para a API.
+  const time_range = JSON.stringify({
+    since: startDate,
+    until: endDate,
+  });
 
   try {
-    const adDataResponse = await axios.get(`https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`, {
-      params: {
-        access_token: token,
-        // **CORREÇÃO AQUI**
-        // Os campos foram reestruturados para buscar as métricas dentro do campo 'insights'
-        // e os nomes das campanhas/conjuntos de seus respectivos objetos.
-        fields: 'name,campaign{name},adset{name},insights{spend,impressions,actions,action_values}',
-        date_preset: 'last_30d',
-        limit: 1000,
-      },
-    });
-    res.json(adDataResponse.data);
+    // URL inicial para a primeira chamada à API. O limite é definido para um valor seguro (ex: 100).
+    const initialUrl = `https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads?access_token=${token}&fields=name,campaign{name},adset{name},insights{spend,impressions,actions,action_values}&time_range=${time_range}&limit=100`;
+    
+    // Inicia o processo de busca paginada.
+    const allAdData = await fetchAllPages(initialUrl);
+
+    // Retorna todos os dados coletados em um único JSON.
+    res.json({ data: allAdData });
+
   } catch (error) {
     console.error('Erro ao buscar dados dos anúncios:', error.response ? error.response.data : error.message);
     res.status(500).json({ error: 'Erro ao buscar dados do Facebook.', details: error.response ? error.response.data : {} });
@@ -80,4 +111,3 @@ router.get('/data', async (req, res) => {
 
 app.use('/.netlify/functions/api', router);
 module.exports.handler = serverless(app);
-
