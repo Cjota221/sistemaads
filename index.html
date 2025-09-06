@@ -1,1 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico - v18</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .stat-card { background-color: #1F2937; border: 1px solid #374151; border-radius: 0.75rem; padding: 1.5rem; transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: center; }
+        .kpi-input { background-color: #374151; border: 1px solid #4b5563; color: white; text-align: center; font-weight: bold; border-radius: 0.5rem; padding: 0.5rem 1rem; width: 100%; }
+        .good { color: #22c55e; }
+        .bad { color: #ef4444; }
+        .action-card { background-color: #1e293b; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; border-left-width: 4px; }
+        .action-card h4 { font-weight: 700; margin-bottom: 0.5rem; word-break: break-word; }
+        .action-card p { font-size: 0.875rem; line-height: 1.6; }
+        .action-card strong { color: #60a5fa; }
+        #error-banner { display: none; }
+        .disabled-section { opacity: 0.5; pointer-events: none; }
+        .budget-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
+        .tag-scale { background-color: #166534; color: #dcfce7; }
+        .tag-maintain { background-color: #9a3412; color: #ffedd5; }
+        .tag-pause { background-color: #991b1b; color: #fee2e2; }
+        .placeholder-card { background-color: #1e293b; border-radius: 0.5rem; padding: 2rem; text-align: center; border: 2px dashed #374151; color: #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-white mb-2">Dashboard Estratégico v18</h1>
+            <p class="text-lg text-gray-400">A sua ferramenta de análise e planeamento de orçamento.</p>
+        </header>
+
+        <!-- Banner de Erro -->
+        <div id="error-banner" class="bg-red-800 border border-red-600 text-white px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <strong class="font-bold" id="error-title"></strong>
+            <span class="block sm:inline" id="error-message"></span>
+        </div>
+        
+        <!-- Seção de Upload -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg">
+                <h3 class="text-xl font-semibold text-white mb-4 text-center">Passo 1: Configuração de Segurança</h3>
+                <label for="adAccountId" class="block mb-2 text-sm font-medium text-gray-400 text-center">ID da Sua Conta de Anúncios</label>
+                <div class="flex items-center gap-4">
+                    <input type="text" id="adAccountId" value="1244920119465862" class="kpi-input flex-grow">
+                    <button id="saveIdBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Salvar ID</button>
+                </div>
+                <p id="saveStatus" class="text-green-400 text-center text-sm mt-2 h-4"></p>
+            </div>
+
+            <div id="analysis-section" class="bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg transition-opacity">
+                 <h3 class="text-xl font-semibold text-white mb-4 text-center">Passo 2: Análise do Relatório</h3>
+                <label for="metaCsvFile" class="mb-2 text-center text-sm text-gray-300 block">Carregue o seu relatório (.csv):</label>
+                <input type="file" id="metaCsvFile" accept=".csv" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500 cursor-pointer">
+                <button id="analyzeBtn" class="mt-8 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Analisar Dados
+                </button>
+            </div>
+        </div>
+
+        <div id="results" class="hidden mt-12">
+            
+            <!-- Seção de Metas -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
+                <h2 class="text-2xl font-bold text-center text-white mb-4">As Nossas Metas de Lucratividade</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-lg mx-auto">
+                    <div><label for="roasGoal" class="block mb-2 text-sm font-medium text-gray-400 text-center">Meta de ROAS</label><input type="number" id="roasGoal" value="6.0" step="0.1" class="kpi-input"></div>
+                    <div><label for="cpaGoal" class="block mb-2 text-sm font-medium text-gray-400 text-center">Teto de CPA (R$)</label><input type="number" id="cpaGoal" value="30" step="1" class="kpi-input"></div>
+                </div>
+                <div id="managerContext" class="text-center text-gray-400 mt-6 text-sm bg-gray-900/50 p-4 rounded-md"></div>
+            </div>
+
+             <!-- Filtros -->
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-8">
+                <h2 class="text-xl font-bold text-center text-white mb-4">Filtros da Análise</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label for="campaignFilter" class="block mb-2 text-sm font-medium text-gray-400">Campanha:</label><select id="campaignFilter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></select></div>
+                    <div><label for="adSetFilter" class="block mb-2 text-sm font-medium text-gray-400">Conjunto:</label><select id="adSetFilter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></select></div>
+                    <div><label for="audienceFilter" class="block mb-2 text-sm font-medium text-gray-400">Público:</label><select id="audienceFilter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></select></div>
+                </div>
+            </div>
+
+            <!-- Métricas Essenciais -->
+            <div id="metricsSection" class="mb-8"><div id="financialMetrics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10"></div></div>
+            
+             <!-- Planeador de Orçamento -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
+                <h2 class="text-3xl font-bold text-center text-white mb-2">Planeador de Orçamento Diário</h2>
+                <p class="text-center text-gray-400 mb-6">Receba uma sugestão de como distribuir o seu próximo orçamento diário.</p>
+                <div class="max-w-sm mx-auto flex items-center gap-4">
+                    <input type="number" id="dailyBudgetInput" placeholder="Ex: 200" class="kpi-input flex-grow">
+                    <button id="planBudgetBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition">Planear</button>
+                </div>
+                <div id="budgetPlanResults" class="mt-8"></div>
+            </div>
+            
+            <!-- Painel de Destaques -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
+                <h2 class="text-3xl font-bold text-center text-white mb-8">Destaques da Conta</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div><h3 class="text-xl font-semibold text-blue-400 mb-4 text-center">Top 5 Maiores Investimentos</h3><div id="topSpendCampaigns" class="space-y-3"></div></div>
+                    <div><h3 class="text-xl font-semibold text-green-400 mb-4 text-center">Top 5 Geradores de Vendas (Conjunto)</h3><div id="topSellingAdSets" class="space-y-3"></div></div>
+                    <div><h3 class="text-xl font-semibold text-green-400 mb-4 text-center">Top 5 Geradores de Vendas (Anúncio)</h3><div id="topSellingAds" class="space-y-3"></div></div>
+                </div>
+            </div>
+
+             <!-- Painéis Estratégicos -->
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
+                <h2 class="text-3xl font-bold text-center text-white mb-8">Painel Estratégico de Conjuntos</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div><h3 class="text-2xl font-semibold text-green-400 mb-4 text-center">A Escalar (Lucro Alto)</h3><div id="goodAdSets" class="space-y-4"></div></div>
+                    <div><h3 class="text-2xl font-semibold text-red-400 mb-4 text-center">A Otimizar (Prejuízo/Lucro Baixo)</h3><div id="badAdSets" class="space-y-4"></div></div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
+                <h2 class="text-3xl font-bold text-center text-white mb-8">Análise de Criativos (Anúncios)</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div><h3 class="text-2xl font-semibold text-green-400 mb-4 text-center">Criativos Campeões</h3><div id="goodCreatives" class="space-y-4"></div></div>
+                    <div><h3 class="text-2xl font-semibold text-red-400 mb-4 text-center">Criativos a Otimizar</h3><div id="badCreatives" class="space-y-4"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const elements = {
+            analyzeBtn: document.getElementById('analyzeBtn'), metaCsvFile: document.getElementById('metaCsvFile'), resultsDiv: document.getElementById('results'), analysisSection: document.getElementById('analysis-section'), campaignFilter: document.getElementById('campaignFilter'), adSetFilter: document.getElementById('adSetFilter'), audienceFilter: document.getElementById('audienceFilter'), roasGoal: document.getElementById('roasGoal'), cpaGoal: document.getElementById('cpaGoal'), adAccountId: document.getElementById('adAccountId'), saveIdBtn: document.getElementById('saveIdBtn'), saveStatus: document.getElementById('saveStatus'), errorBanner: document.getElementById('error-banner'), errorTitle: document.getElementById('error-title'), errorMessage: document.getElementById('error-message'), managerContext: document.getElementById('managerContext'), financialMetrics: document.getElementById('financialMetrics'), topSpendCampaigns: document.getElementById('topSpendCampaigns'), topSellingAdSets: document.getElementById('topSellingAdSets'), topSellingAds: document.getElementById('topSellingAds'), goodAdSets: document.getElementById('goodAdSets'), badAdSets: document.getElementById('badAdSets'),
+            goodCreatives: document.getElementById('goodCreatives'),
+            badCreatives: document.getElementById('badCreatives'),
+            dailyBudgetInput: document.getElementById('dailyBudgetInput'),
+            planBudgetBtn: document.getElementById('planBudgetBtn'),
+            budgetPlanResults: document.getElementById('budgetPlanResults'),
+        };
+
+        let allData = [];
+
+        // --- Event Listeners ---
+        elements.metaCsvFile.addEventListener('change', () => elements.analyzeBtn.disabled = !elements.metaCsvFile.files.length);
+        elements.analyzeBtn.addEventListener('click', handleAnalysis);
+        elements.saveIdBtn.addEventListener('click', saveAdAccountId);
+        elements.planBudgetBtn.addEventListener('click', displayBudgetPlan);
+        [elements.campaignFilter, elements.adSetFilter, elements.audienceFilter, elements.roasGoal, elements.cpaGoal].forEach(el => el.addEventListener('input', updateDashboard));
+        
+        window.addEventListener('load', () => {
+            const savedId = localStorage.getItem('adAccountId');
+            if (savedId) {
+                elements.adAccountId.value = savedId;
+                elements.analysisSection.classList.remove('disabled-section');
+            } else {
+                 elements.analysisSection.classList.add('disabled-section');
+            }
+        });
+        
+        function saveAdAccountId() {
+            const id = elements.adAccountId.value.trim();
+            if (id) {
+                localStorage.setItem('adAccountId', id);
+                elements.saveStatus.textContent = 'ID salvo com sucesso! Já pode carregar o seu relatório.';
+                elements.analysisSection.classList.remove('disabled-section');
+                setTimeout(() => { elements.saveStatus.textContent = ''; }, 3000);
+            } else {
+                 elements.saveStatus.textContent = 'Por favor, insira um ID válido.';
+                 setTimeout(() => { elements.saveStatus.textContent = ''; }, 3000);
+            }
+        }
+
+        // --- Core Logic ---
+        async function handleAnalysis() {
+            elements.analyzeBtn.textContent = 'A processar...';
+            elements.analyzeBtn.disabled = true;
+            elements.errorBanner.style.display = 'none';
+
+            const configuredId = localStorage.getItem('adAccountId');
+            if (!configuredId) {
+                showError('Acesso Negado!', 'Por favor, clique em "Salvar ID" no Passo 1 primeiro.');
+                elements.analyzeBtn.textContent = 'Analisar Dados';
+                elements.analyzeBtn.disabled = false; return;
+            }
+
+            const file = elements.metaCsvFile.files[0];
+
+            if (!file.name.toLowerCase().includes('cjota')) {
+                showError('Erro de Ficheiro!', 'O formato do relatório parece ser inválido. O nome do ficheiro deve conter "CJOTA".');
+                elements.analyzeBtn.textContent = 'Analisar Dados';
+                elements.analyzeBtn.disabled = false; return;
+            }
+
+            try {
+                const results = await processFile(file, parseMetaRows);
+                if (!results || results.length === 0) { return; } 
+
+                const fileAdAccountId = results.find(d => d.adAccountId)?.adAccountId;
+                if (!fileAdAccountId) {
+                     showError('Erro de Leitura!', 'Não foi possível encontrar um ID de conta de anúncios no ficheiro. Verifique se a coluna "Identificação da conta" foi exportada.');
+                     return;
+                }
+                if (fileAdAccountId !== configuredId) {
+                    showError('Acesso Negado!', `Este relatório pertence à conta ${fileAdAccountId}, que é diferente da conta ${configuredId} configurada.`);
+                    return;
+                }
+
+                allData = results;
+                populateFilters();
+                updateDashboard();
+                elements.resultsDiv.classList.remove('hidden');
+            } catch (error) { 
+                console.error("Analysis failed:", error); 
+                showError("Erro Inesperado!", "Ocorreu um erro ao processar o ficheiro. Verifique o formato.");
+            } 
+            finally { 
+                elements.analyzeBtn.textContent = 'Analisar Dados'; 
+                elements.analyzeBtn.disabled = false; 
+            }
+        }
+
+        function showError(title, message) {
+            elements.errorTitle.textContent = title;
+            elements.errorMessage.textContent = message;
+            elements.errorBanner.style.display = 'block';
+            elements.resultsDiv.classList.add('hidden');
+        }
+        
+        function processFile(file, rowParser) { return new Promise((resolve, reject) => { Papa.parse(file, { header: true, skipEmptyLines: true, complete: res => resolve(rowParser(res)), error: reject }); }); }
+
+        function parseMetaRows({ data, meta }) {
+            const find = (keys) => { for (const key of keys) { if (meta.fields.includes(key)) return key; } return null; };
+            const cols = { 
+                adAccountId: find(['ID da conta de anúncios', 'Identificação da conta']), date: find(['Início dos relatórios']), campaignName: find(['Nome da campanha']), adSetName: find(['Nome do conjunto de anúncios']), adName: find(['Nome do anúncio']), spent: find(['Valor usado (BRL)']), purchases: find(['Compras']), purchaseValue: find(['Valor de conversão da compra']), cpm: find(['CPM (custo por 1.000 impressões) (BRL)']), ctr: find(['CTR (todos)']), impressions: find(['Impressões']), reach: find(['Alcance']) 
+            };
+            
+            if (!cols.adAccountId) { showError('Erro de Ficheiro!', 'A coluna "ID da conta de anúncios" ou "Identificação da conta" é necessária. Por favor, exporte o relatório novamente, incluindo esta coluna.'); return []; }
+            if (!cols.adName) { showError('Erro de Ficheiro!', 'A coluna "Nome do anúncio" é essencial para a análise de criativos.'); return []; }
+
+            return data
+                .filter(row => row[cols.adName]) 
+                .map(row => {
+                    const spent = parseFloat(row[cols.spent]?.replace(',', '.') || 0);
+                    const purchaseValue = parseFloat(row[cols.purchaseValue]?.replace(',', '.') || 0);
+                    const adSetName = row[cols.adSetName] || 'N/A';
+                    const audienceType = adSetName.toLowerCase().includes('quente') || adSetName.toLowerCase().includes('remarketing') ? 'Público Quente (Remarketing)' : 'Público Frio (Novos)';
+                    return { adAccountId: row[cols.adAccountId], date: row[cols.date], campaignName: row[cols.campaignName] || 'N/A', adSetName, adName: row[cols.adName] || 'N/A', audienceType, spent, purchaseValue, purchases: parseInt(row[cols.purchases] || 0), roas: spent > 0 ? purchaseValue / spent : 0, cpm: parseFloat(row[cols.cpm]?.replace(',', '.') || 0), ctr: parseFloat(row[cols.ctr] || 0), impressions: parseInt(row[cols.impressions] || 0), reach: parseInt(row[cols.reach] || 0) };
+                })
+                .filter(d => d.spent > 0 || d.purchaseValue > 0);
+        }
+        
+        function populateFilters() {
+             const populate = (select, options, defaultLabel) => {
+                select.innerHTML = `<option value="all">${defaultLabel}</option>`;
+                [...new Set(options)].sort().forEach(o => select.innerHTML += `<option value="${o}">${o}</option>`);
+            };
+            const campaignNames = [...new Set(allData.map(d => d.campaignName))];
+            if (campaignNames.length > 0 && campaignNames[0] !== 'N/A') {
+                elements.campaignFilter.disabled = false;
+                populate(elements.campaignFilter, campaignNames, 'Todas as Campanhas');
+            } else {
+                elements.campaignFilter.innerHTML = '<option value="all">N/A</option>';
+                elements.campaignFilter.disabled = true;
+            }
+            populate(elements.adSetFilter, allData.map(d => d.adSetName), 'Todos os Conjuntos');
+            populate(elements.audienceFilter, allData.map(d => d.audienceType), 'Todos os Públicos');
+        }
+
+        function updateDashboard() {
+            if (allData.length === 0) return;
+            const filters = { c: elements.campaignFilter.value, a: elements.adSetFilter.value, u: elements.audienceFilter.value };
+            const filteredData = allData.filter(d => (filters.c === 'all' || d.campaignName === filters.c) && (filters.a === 'all' || d.adSetName === filters.a) && (filters.u === 'all' || d.audienceType === filters.u));
+            const goals = { roas: parseFloat(elements.roasGoal.value) || 0, cpa: parseFloat(elements.cpaGoal.value) || 0 };
+            
+            displayManagerContext(goals);
+            displayMetrics(filteredData, goals);
+            displayHighlights(filteredData);
+            generateStrategicSummaries(filteredData, goals);
+            displayBudgetPlan();
+        }
+
+        function displayManagerContext(goals) {
+            if (goals.roas > 0 && goals.cpa > 0) {
+                 elements.managerContext.innerHTML = `<strong>Contexto para a Gestão:</strong> Estas metas foram calculadas com base na nossa margem de lucro. Para cada venda, precisamos de um retorno de <strong>${goals.roas.toFixed(2)}x</strong> e um custo máximo de <strong>R$ ${goals.cpa.toFixed(2)}</strong> para garantir a lucratividade.`;
+            } else {
+                elements.managerContext.innerHTML = `Insira as metas de ROAS e CPA para ativar a análise de lucratividade.`;
+            }
+        }
+        
+        function getKpiClass(value, goal, type = 'higherIsBetter') {
+            if (goal <= 0) return ''; const ratio = value / goal;
+            if (type === 'higherIsBetter') { if (ratio >= 1) return 'good'; if (ratio >= 0.8) return 'warning'; return 'bad'; } 
+            else { if (ratio <= 1) return 'good'; if (ratio <= 1.2) return 'warning'; return 'bad'; }
+        }
+
+        const createCard = (containerId, title, value, kpiClass) => {
+            document.getElementById(containerId).innerHTML += `<div class="stat-card"><h3 class="text-gray-400 text-md font-medium mb-2">${title}</h3><p class="text-4xl font-bold ${kpiClass}">${value}</p></div>`;
+        };
+
+        function displayMetrics(data, goals) {
+            elements.financialMetrics.innerHTML = '';
+            const uniqueDays = new Set(data.map(d => d.date)).size;
+            const totals = data.reduce((acc, d) => {
+                acc.spent += d.spent; acc.revenue += d.purchaseValue; acc.purchases += d.purchases; return acc;
+            }, { spent: 0, revenue: 0, purchases: 0 });
+            const roas = totals.spent > 0 ? totals.revenue / totals.spent : 0;
+            const cpa = totals.purchases > 0 ? totals.spent / totals.purchases : 0;
+            const avgDailySpend = uniqueDays > 0 ? totals.spent / uniqueDays : 0;
+
+            createCard('financialMetrics', 'ROAS', `${roas.toFixed(2)}x`, getKpiClass(roas, goals.roas));
+            createCard('financialMetrics', 'CPA (Custo por Compra)', `R$ ${cpa.toFixed(2)}`, getKpiClass(cpa, goals.cpa, 'lowerIsBetter'));
+            createCard('financialMetrics', 'Receita Total', `R$ ${totals.revenue.toFixed(2)}`, 'good');
+            createCard('financialMetrics', 'Compras', totals.purchases.toString(), '');
+            createCard('financialMetrics', 'Invest. Médio / Dia', `R$ ${avgDailySpend.toFixed(2)}`, 'text-blue-400');
+        }
+
+        function displayHighlights(data) {
+            const campaignSpendAgg = aggregateData(data, 'campaignName').sort((a, b) => b.spent - a.spent).slice(0, 5);
+            populateHighlightList(elements.topSpendCampaigns, campaignSpendAgg, 'spent');
+            const adSetSalesAgg = aggregateData(data, 'adSetName').sort((a, b) => b.purchases - a.purchases).slice(0, 5);
+            populateHighlightList(elements.topSellingAdSets, adSetSalesAgg, 'purchases');
+            const adSalesAgg = aggregateData(data, 'adName').sort((a, b) => b.purchases - a.purchases).slice(0, 5);
+            populateHighlightList(elements.topSellingAds, adSalesAgg, 'purchases');
+        }
+
+        function populateHighlightList(container, data, metric) {
+            container.innerHTML = '';
+            if (data.length === 0 || data.every(item => item[metric] === 0)) {
+                 container.innerHTML = '<p class="text-gray-500 text-center text-sm p-4">Nenhum dado relevante encontrado.</p>';
+                 return;
+            }
+            const list = document.createElement('ul'); list.className = 'space-y-2 text-gray-300';
+            data.forEach(item => {
+                const value = metric === 'spent' ? `R$ ${item.spent.toFixed(2)}` : `${item.purchases} ${item.purchases === 1 ? 'venda' : 'vendas'}`;
+                const li = document.createElement('li');
+                li.className = 'bg-gray-900 p-3 rounded-md flex justify-between items-center text-sm hover:bg-gray-700 transition-colors';
+                li.innerHTML = `<span class="truncate pr-2" title="${item.key}">${item.key}</span><span class="font-bold whitespace-nowrap text-white">${value}</span>`;
+                list.appendChild(li);
+            });
+            container.appendChild(list);
+        }
+        
+        function generateStrategicSummaries(data, goals) {
+            const adSetAgg = aggregateData(data, 'adSetName');
+            populateSummary(elements.goodAdSets, elements.badAdSets, adSetAgg, goals, 'set');
+            const adAgg = aggregateData(data, 'adName');
+            populateSummary(elements.goodCreatives, elements.badCreatives, adAgg, goals, 'creative');
+        }
+
+        function populateSummary(goodList, badList, aggregatedData, goals, type) {
+            goodList.innerHTML = ''; badList.innerHTML = '';
+            const placeholderInitial = `<div class="placeholder-card"><p>Defina as suas metas para ativar o diagnóstico.</p></div>`;
+            if (goals.roas <= 0 || goals.cpa <= 0) {
+                goodList.innerHTML = placeholderInitial; badList.innerHTML = placeholderInitial; return;
+            }
+            const avgCPM = allData.reduce((acc, d) => acc + d.cpm, 0) / allData.length;
+            aggregatedData.forEach(item => {
+                const isGood = (item.roas >= goals.roas) && (item.cpa <= goals.cpa) && item.purchases > 0;
+                const isBad = item.spent > 20 && ((item.roas > 0 && item.roas < goals.roas) || (item.cpa > 0 && item.cpa > goals.cpa));
+
+                if (isGood) {
+                    goodList.innerHTML += `<div class="action-card border-green-500"><h4>${item.key}</h4><p><strong>Diagnóstico:</strong> Excelente! Está a superar as metas de lucro.</p><p class="mt-2"><strong>Ação Sugerida:</strong> ${type === 'set' ? 'Aumentar o orçamento em 15-20% para escalar.' : 'Usar como modelo para novos criativos.'}</p></div>`;
+                } else if (isBad) {
+                    let diagnosis = '', action = '';
+                    if (item.purchases === 0 && item.spent > goals.cpa && goals.cpa > 0) {
+                        diagnosis = 'Gastou mais que o CPA máximo permitido sem gerar uma única venda.'; action = '<strong>Pausar imediatamente.</strong> A causa provável não está no anúncio, mas sim na oferta ou na página de destino.';
+                    } else if (item.ctr < 1.0) {
+                        diagnosis = `O problema principal é o <strong>CTR baixo (${item.ctr.toFixed(2)}%)</strong>. O anúncio não está a conseguir captar a atenção.`; action = 'Testar <strong>novos criativos</strong> (imagens/vídeos com mais apelo) e copy para aumentar a relevância.';
+                    } else if (item.cpm > avgCPM * 1.5) {
+                        diagnosis = `O CTR é bom, mas o <strong>CPM está alto (R$ ${item.cpm.toFixed(2)})</strong>. O custo para alcançar este público está elevado.`; action = 'O público pode estar muito competitivo. Testar a <strong>expansão do público</strong> com interesses relacionados ou públicos semelhantes (Lookalikes).';
+                    } else if (item.frequency > 3.5) {
+                         diagnosis = `O desempenho está a cair e a <strong>frequência está alta (${item.frequency.toFixed(2)})</strong>. As mesmas pessoas estão a ver o anúncio demasiadas vezes.`; action = '<strong>Atualizar os criativos</strong> para combater a fadiga do anúncio.';
+                    } else {
+                        diagnosis = 'O CTR e o CPM estão normais, mas a conversão não está a acontecer como esperado.'; action = 'O problema provavelmente está após o clique. Otimizar a <strong>página de destino</strong> (velocidade, oferta, confiança).';
+                    }
+                    badList.innerHTML += `<div class="action-card border-red-500"><h4>${item.key}</h4><p><strong>Diagnóstico:</strong> ${diagnosis}</p><p class="mt-2"><strong>Ação Sugerida:</strong> ${action}</p></div>`;
+                }
+            });
+
+            if (goodList.innerHTML === '') goodList.innerHTML = `<div class="placeholder-card"><p>Nenhum ${type === 'set' ? 'conjunto' : 'criativo'} superou ambas as metas.</p></div>`;
+            if (badList.innerHTML === '') badList.innerHTML = `<div class="placeholder-card"><p>Nenhum ${type === 'set' ? 'conjunto' : 'criativo'} em estado crítico. Bom trabalho!</p></div>`;
+        }
+        
+        function aggregateData(data, key) {
+             const aggregated = data.reduce((acc, row) => {
+                const id = row[key];
+                if (!acc[id]) acc[id] = { key: id, spent: 0, purchaseValue: 0, purchases: 0, impressions: 0, reach: 0, clicks: 0, cpmSum: 0 };
+                acc[id].spent += row.spent; acc[id].purchaseValue += row.purchaseValue; acc[id].purchases += row.purchases;
+                acc[id].impressions += row.impressions; acc[id].reach += row.reach; acc[id].clicks += (row.ctr / 100 * row.impressions); acc[id].cpmSum += row.cpm * row.impressions;
+                return acc;
+            }, {});
+            return Object.values(aggregated).map(d => {
+                const roas = d.spent > 0 ? d.purchaseValue / d.spent : 0;
+                const cpa = d.purchases > 0 ? d.spent / d.purchases : 0;
+                const cpm = d.impressions > 0 ? d.cpmSum / d.impressions : 0;
+                const ctr = d.impressions > 0 ? (d.clicks / d.impressions) * 100 : 0;
+                const frequency = d.reach > 0 ? d.impressions / d.reach : 0;
+                return {...d, roas, cpa, cpm, ctr, frequency};
+            });
+        }
+        
+        function displayBudgetPlan() {
+            const totalBudget = parseFloat(elements.dailyBudgetInput.value);
+            if (!totalBudget || totalBudget <= 0 || allData.length === 0) {
+                elements.budgetPlanResults.innerHTML = '';
+                return;
+            }
+            const goals = { roas: parseFloat(elements.roasGoal.value) || 0, cpa: parseFloat(elements.cpaGoal.value) || 0 };
+            if (goals.roas <= 0 || goals.cpa <= 0) {
+                elements.budgetPlanResults.innerHTML = '<p class="text-center text-amber-400 mt-4">Por favor, defina as metas de ROAS e CPA para gerar um plano.</p>';
+                return;
+            }
+            const filters = { c: elements.campaignFilter.value, a: elements.adSetFilter.value, u: elements.audienceFilter.value };
+            const filteredData = allData.filter(d => (filters.c === 'all' || d.campaignName === filters.c) && (filters.a === 'all' || d.adSetName === filters.a) && (filters.u === 'all' || d.audienceType === filters.u));
+
+            const adSetAgg = aggregateData(filteredData, 'adSetName');
+            const budgetAllocation = { scale: 0.6, maintain: 0.3, test: 0.1 };
+            const categories = { scale: [], maintain: [], pause: [] };
+            let totalScore = 0;
+
+            adSetAgg.forEach(set => {
+                if (set.roas >= goals.roas * 1.2 && set.cpa <= goals.cpa * 0.8) {
+                    set.score = set.roas / set.cpa; totalScore += set.score; categories.scale.push(set);
+                } else if (set.roas < goals.roas * 0.8 || set.cpa > goals.cpa * 1.2) {
+                    categories.pause.push(set);
+                } else {
+                    categories.maintain.push(set);
+                }
+            });
+
+            let tableHTML = `<div class="overflow-x-auto mt-6"><table class="w-full text-sm text-left text-gray-300"><thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="px-6 py-3">Conjunto de Anúncios</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Orçamento Sugerido</th></tr></thead><tbody>`;
+            if (totalScore > 0) {
+                categories.scale.forEach(set => {
+                    const budget = (set.score / totalScore) * (totalBudget * budgetAllocation.scale);
+                    tableHTML += `<tr><td class="px-6 py-4">${set.key}</td><td class="px-6 py-4"><span class="budget-tag tag-scale">Escalar</span></td><td class="px-6 py-4 font-bold text-green-400">R$ ${budget.toFixed(2)}</td></tr>`;
+                });
+            }
+            if (categories.maintain.length > 0) {
+                const maintainBudget = (totalBudget * budgetAllocation.maintain) / categories.maintain.length;
+                 categories.maintain.forEach(set => {
+                    tableHTML += `<tr><td class="px-6 py-4">${set.key}</td><td class="px-6 py-4"><span class="budget-tag tag-maintain">Manter</span></td><td class="px-6 py-4 font-bold text-amber-400">R$ ${maintainBudget.toFixed(2)}</td></tr>`;
+                });
+            }
+            categories.pause.forEach(set => {
+                tableHTML += `<tr><td class="px-6 py-4">${set.key}</td><td class="px-6 py-4"><span class="budget-tag tag-pause">Pausar/Otimizar</span></td><td class="px-6 py-4 font-bold text-red-400">R$ 0.00</td></tr>`;
+            });
+            const testBudget = totalBudget * budgetAllocation.test;
+            tableHTML += `<tr><td class="px-6 py-4"><strong>Novos Testes</strong></td><td></td><td class="px-6 py-4 font-bold text-blue-400">R$ ${testBudget.toFixed(2)}</td></tr>`;
+            tableHTML += `</tbody></table></div>`;
+            elements.budgetPlanResults.innerHTML = tableHTML;
+        }
+    </script>
+</body>
+</html>
+
 
