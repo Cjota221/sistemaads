@@ -24,7 +24,6 @@ router.get('/login', (req, res) => {
   const event = req.apiGateway.event;
   const baseUrl = getBaseUrl(event);
   const redirectUri = `${baseUrl}/.netlify/functions/api/callback`;
-  // Adicionamos a permissão 'ads_management' para poder pausar/editar
   const scope = 'ads_read,read_insights,ads_management'; 
   const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&auth_type=rerequest`;
   res.redirect(authUrl);
@@ -58,8 +57,8 @@ router.get('/data', async (req, res) => {
     const adDataResponse = await axios.get(`https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`, {
       params: {
         access_token: token,
-        // Pedimos o ID do adset para saber qual pausar
-        fields: 'name,campaign{name},adset{id,name},insights{spend,impressions,actions,action_values,ctr,cpm,cpc}',
+        // **ATUALIZAÇÃO AQUI**: Pedimos o thumbnail do criativo
+        fields: 'name,campaign{name},adset{id,name},creative{thumbnail_url},insights{spend,impressions,actions,action_values,ctr,cpm,cpc}',
         date_preset: 'last_30d',
         limit: 1000,
       },
@@ -71,7 +70,7 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// **NOVA ROTA** - Rota para Atualizar (Pausar) um Conjunto de Anúncios
+// Rota para Atualizar (Pausar) um Conjunto de Anúncios
 router.post('/update-adset', async (req, res) => {
   const { token, adset_id, status } = req.body;
 
