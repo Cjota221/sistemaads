@@ -1,16 +1,16 @@
-# Este ficheiro diz ao Netlify como construir e servir o seu site.
-
 [build]
-  # O diretório que contém o seu site (o ponto "." significa a pasta atual).
-  publish = "."
-  # O diretório onde o Netlify encontrará as suas funções de backend.
   functions = "netlify/functions"
 
-# Esta é a regra mais importante:
-# Ela redireciona qualquer chamada para /api/... para a nossa função serverless.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 
+# **NOVA CONFIGURAÇÃO ABAIXO**
+[functions]
+  # Aumenta o tempo limite para a nossa função específica
+  # O nome deve corresponder ao nome do ficheiro (sem .js)
+  [functions."api"]
+    # Define o tempo limite em segundos (o máximo pode variar dependendo do plano Netlify)
+    timeout = 25
 
