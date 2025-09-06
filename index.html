@@ -44,7 +44,6 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" /></svg>
                     Dashboard
                 </a>
-                <!-- Futuros links da sidebar podem ser adicionados aqui -->
             </nav>
         </aside>
 
@@ -55,7 +54,6 @@
                 <p class="text-slate-500 mt-1">Análise de Performance de Anúncios Meta</p>
             </header>
 
-            <!-- Secção de Login -->
             <section id="login-section" class="max-w-xl mx-auto bg-white p-10 rounded-xl shadow-sm text-center">
                 <h2 class="text-2xl font-semibold mb-4">Bem-vindo(a)</h2>
                 <p class="text-slate-600 mb-6">Para analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
@@ -64,7 +62,6 @@
                 </button>
             </section>
 
-             <!-- Secção de Análise -->
             <section id="analysis-section" class="hidden">
                 <div id="loading-state" class="text-center py-20">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -77,13 +74,23 @@
                 </div>
 
                 <div id="dashboard-content" class="hidden space-y-10">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- Metas são preenchidas aqui -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="goals-container">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <label for="roas-goal" class="block text-sm font-medium text-slate-700">Meta de ROAS</label>
+                            <input type="number" id="roas-goal" value="6.0" step="0.1" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <label for="cpa-goal" class="block text-sm font-medium text-slate-700">Teto de CPA (R$)</label>
+                            <input type="number" id="cpa-goal" value="30.00" step="0.50" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm flex items-end">
+                            <button id="reanalyze-button" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
+                                Reanalisar
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6" id="kpi-grid">
-                        <!-- Cards de KPI -->
-                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6" id="kpi-grid"></div>
 
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                         <div class="bg-white p-6 rounded-xl shadow-sm">
@@ -120,9 +127,14 @@
             } else {
                 document.getElementById('login-section').classList.remove('hidden');
             }
+            
+            document.getElementById('reanalyze-button').addEventListener('click', () => {
+                if (rawAdData.length > 0) {
+                    processAndDisplayData(rawAdData);
+                }
+            });
         };
         
-        // --- FUNÇÕES DE AÇÃO (NOVO) ---
         function confirmPauseAdset(adsetId, adsetName) {
             const modal = document.getElementById('confirmation-modal');
             document.getElementById('modal-title').innerText = 'Pausar Conjunto de Anúncios';
@@ -140,7 +152,10 @@
             };
             
             confirmBtn.addEventListener('click', confirmHandler);
-            cancelBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', () => {
+                closeModal();
+                confirmBtn.removeEventListener('click', confirmHandler); // Limpa o listener ao cancelar também
+            });
         }
         
         function pauseAdset(adsetId) {
@@ -173,7 +188,6 @@
         
         function closeModal() {
             document.getElementById('confirmation-modal').classList.add('hidden');
-            document.getElementById('modal-confirm-btn').removeEventListener('click', () => {});
         }
 
         function showToast(message, type = 'info') {
@@ -190,17 +204,116 @@
             }, 4000);
         }
         
-        // --- FUNÇÕES DE DADOS E EXIBIÇÃO ---
         function fetchAdData(token) {
-             // ... restante do código (sem alterações) ...
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('error-container').classList.add('hidden');
+
+            fetch(`/.netlify/functions/api/data?token=${token}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            let errorDetails = text;
+                            try { const jsonError = JSON.parse(text); errorDetails = JSON.stringify(jsonError.details || jsonError, null, 2); } catch (e) {}
+                            throw new Error(`O servidor respondeu com status ${response.status}. Detalhes: ${errorDetails}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.data) {
+                        rawAdData = data.data; 
+                        processAndDisplayData(rawAdData);
+                    } else {
+                        throw new Error("A resposta da API não continha o campo 'data' esperado.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro detalhado ao buscar ou processar dados:', error);
+                    document.getElementById('loading-state').classList.add('hidden');
+                    document.getElementById('error-message').textContent = `Falha ao carregar os dados. Motivo: ${error.message}`;
+                    document.getElementById('error-container').classList.remove('hidden');
+                });
         }
 
         function processAndDisplayData(data) {
-             // ... restante do código (sem alterações) ...
+            const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
+            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
+
+            let totalSpend = 0;
+            let totalRevenue = 0;
+            let totalPurchases = 0;
+            let adsets = {};
+
+            data.forEach(ad => {
+                if (!ad.insights || !ad.insights.data || ad.insights.data.length === 0) return;
+                const insights = ad.insights.data[0];
+                const adsetName = ad.adset.name;
+                const adsetId = ad.adset.id;
+
+                if (!adsets[adsetName]) {
+                    adsets[adsetName] = { id: adsetId, spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
+                }
+                
+                const spend = parseFloat(insights.spend || 0);
+                totalSpend += spend;
+                adsets[adsetName].spend += spend;
+
+                const purchaseAction = insights.actions?.find(a => a.action_type === 'purchase');
+                const purchases = parseInt(purchaseAction?.value || 0);
+                totalPurchases += purchases;
+                adsets[adsetName].purchases += purchases;
+                
+                const revenueAction = insights.action_values?.find(a => a.action_type === 'purchase');
+                const revenue = parseFloat(revenueAction?.value || 0);
+                totalRevenue += revenue;
+                adsets[adsetName].revenue += revenue;
+
+                adsets[adsetName].ctr += parseFloat(insights.ctr || 0);
+                adsets[adsetName].cpm += parseFloat(insights.cpm || 0);
+                adsets[adsetName].cpc += parseFloat(insights.cpc || 0);
+                adsets[adsetName].adCount++;
+            });
+
+            for (const name in adsets) {
+                if (adsets[name].adCount > 0) {
+                    adsets[name].ctr /= adsets[name].adCount;
+                    adsets[name].cpm /= adsets[name].adCount;
+                    adsets[name].cpc /= adsets[name].adCount;
+                }
+            }
+
+            const overallROAS = totalSpend > 0 ? (totalRevenue / totalSpend) : 0;
+            const overallCPA = totalPurchases > 0 ? (totalSpend / totalPurchases) : 0;
+
+            displayKPIs(totalSpend, totalRevenue, totalPurchases, overallROAS, overallCPA, roasGoal, cpaGoal);
+            displayStrategicPanels(adsets, roasGoal, cpaGoal);
+            
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-container').classList.add('hidden');
+            document.getElementById('dashboard-content').classList.remove('hidden');
         }
 
         function displayKPIs(spend, revenue, purchases, roas, cpa, roasGoal, cpaGoal) {
-             // ... restante do código (sem alterações) ...
+            const kpiGrid = document.getElementById('kpi-grid');
+            kpiGrid.innerHTML = ''; 
+
+            const kpis = [
+                { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
+                { label: 'Receita Total', value: `R$ ${revenue.toFixed(2)}` },
+                { label: 'Compras', value: purchases },
+                { label: 'ROAS Geral', value: roas.toFixed(2), colorClass: roas >= roasGoal ? 'text-green-600' : 'text-red-600' },
+                { label: 'CPA Geral', value: `R$ ${cpa.toFixed(2)}`, colorClass: cpa <= cpaGoal ? 'text-green-600' : 'text-red-600' }
+            ];
+
+            kpis.forEach(kpi => {
+                const card = `
+                    <div class="kpi-card bg-white p-4 rounded-xl shadow-sm text-center">
+                        <p class="text-sm font-medium text-slate-500">${kpi.label}</p>
+                        <p class="text-2xl font-bold mt-1 ${kpi.colorClass || 'text-slate-900'}">${kpi.value}</p>
+                    </div>`;
+                kpiGrid.innerHTML += card;
+            });
         }
 
         function displayStrategicPanels(adsets, roasGoal, cpaGoal) {
@@ -217,7 +330,6 @@
                 const meetsRoas = roas >= roasGoal;
                 const meetsCpa = cpa > 0 && cpa <= cpaGoal;
 
-                // **ATUALIZAÇÃO AQUI** - Adicionamos o botão de pausar no card de otimização
                 const pauseButtonHtml = `
                     <button onclick="confirmPauseAdset('${data.id}', '${name.replace(/'/g, "\\'")}')" data-adset-id="${data.id}"
                             class="btn-action mt-3 w-full bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-lg hover:bg-red-200">
@@ -225,7 +337,7 @@
                     </button>`;
 
                 const cardHtml = `
-                    <div class="adset-card border p-4 rounded-lg bg-slate-50">
+                    <div class="adset-card border p-4 rounded-lg bg-slate-100">
                         <p class="font-bold text-slate-800">${name}</p>
                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
                             <span>ROAS: <span class="${roas >= roasGoal ? 'text-green-600' : 'text-red-600'} font-semibold">${roas.toFixed(2)}</span></span>
@@ -236,8 +348,7 @@
                             <span>Invest.: <span class="font-semibold">R$ ${data.spend.toFixed(2)}</span></span>
                         </div>
                         ${(meetsRoas && meetsCpa) ? '' : pauseButtonHtml}
-                    </div>
-                `;
+                    </div>`;
 
                 if (meetsRoas && meetsCpa) {
                     escalaContent.innerHTML += cardHtml;
