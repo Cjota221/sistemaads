@@ -18,6 +18,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
+    <!-- Notificações e Modais -->
     <div id="toast-notification" class="fixed top-5 right-5 z-50 transition-transform transform translate-x-full"></div>
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
@@ -57,7 +58,7 @@
 
             <div id="views-container" class="hidden">
                 <div id="dashboard-view">
-                    <header class="text-left mb-10">
+                     <header class="text-left mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Dashboard Estratégico</h2>
                         <p class="text-slate-500 mt-1">Análise de Performance para Tomada de Decisão</p>
                     </header>
@@ -166,7 +167,6 @@
             startDateInput.value = formatDate(startDate);
         }
 
-        // **FUNÇÃO CORRIGIDA**
         function fetchAdData(token) {
             document.getElementById('loading-state').classList.remove('hidden');
             document.getElementById('views-container').classList.add('hidden');
@@ -182,7 +182,6 @@
                 return;
             }
 
-            // **CORREÇÃO AQUI**: Passa as datas na URL do fetch
             fetch(`/.netlify/functions/api/data?token=${token}&startDate=${startDate}&endDate=${endDate}`)
                 .then(response => {
                     if (!response.ok) {
@@ -254,7 +253,6 @@
                 const campaignName = ad.campaign.name;
                 const adsetName = ad.adset.name;
                 const adName = ad.name;
-                const thumbnailUrl = ad.creative ? ad.creative.thumbnail_url : 'https://placehold.co/60x60/e2e8f0/64748b?text=AD';
 
                 if (!campaigns[campaignName]) campaigns[campaignName] = { spend: 0, purchases: 0, adsets: {} };
                 if (!campaigns[campaignName].adsets[adsetName]) campaigns[campaignName].adsets[adsetName] = { spend: 0, purchases: 0, ads: [] };
@@ -269,7 +267,7 @@
                 campaigns[campaignName].purchases += purchases;
                 campaigns[campaignName].adsets[adsetName].spend += spend;
                 campaigns[campaignName].adsets[adsetName].purchases += purchases;
-                campaigns[campaignName].adsets[adsetName].ads.push({ name: adName, spend, purchases, thumbnail: thumbnailUrl });
+                campaigns[campaignName].adsets[adsetName].ads.push({ name: adName, spend, purchases });
             });
             renderCampaignsView(campaigns);
         }
@@ -283,11 +281,8 @@
                 Object.entries(campaign.adsets).forEach(([adsetName, adset]) => {
                     let adsHtml = '';
                     adset.ads.forEach(ad => {
-                        adsHtml += `<div class="flex items-center justify-between p-2 bg-slate-100 rounded">
-                                        <div class="flex items-center gap-3">
-                                            <img src="${ad.thumbnail}" alt="Pré-visualização do criativo" class="w-10 h-10 rounded object-cover bg-slate-200" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=Img';">
-                                            <span class="text-sm">${ad.name}</span>
-                                        </div>
+                        adsHtml += `<div class="flex justify-between p-2 bg-slate-100 rounded">
+                                        <span class="text-sm">${ad.name}</span>
                                         <span class="text-sm font-medium">R$ ${ad.spend.toFixed(2)} | ${ad.purchases} vendas</span>
                                     </div>`;
                     });
@@ -317,7 +312,7 @@
                         <div data-accordion-content class="pt-2">${adsetsHtml}</div>
                     </div>`;
             });
-            if (Object.keys(campaigns).length === 0) {
+            if (container.innerHTML === '') {
                 container.innerHTML = '<p class="text-slate-500 text-center py-10">Nenhuma campanha ativa encontrada no período selecionado.</p>';
             }
         }
@@ -402,7 +397,7 @@
             const sortedAdsets = Object.entries(adsets).sort(([,a], [,b]) => b.spend - a.spend);
 
             sortedAdsets.forEach(([name, data]) => {
-                if(data.spend === 0) return;
+                if(data.spend === 0) return; // Não mostra conjuntos que não gastaram no período
                 
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
@@ -530,5 +525,4 @@
     </script>
 </body>
 </html>
-
 
