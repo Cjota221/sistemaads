@@ -14,6 +14,15 @@
         .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .budget-input { width: 80px; text-align: right; }
         [data-accordion-content] { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .thumbnail-placeholder {
+            width: 80px; height: 80px;
+            background-color: #e2e8f0; /* slate-200 */
+            border-radius: 0.5rem; /* rounded-lg */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b; /* slate-500 */
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -103,7 +112,7 @@
                 <div id="campaigns-view" class="hidden">
                     <header class="text-left mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Gestão de Campanhas</h2>
-                        <p class="text-slate-500 mt-1">Visão geral e KPIs das suas campanhas ativas no período selecionado.</p>
+                        <p class="text-slate-500 mt-1">Visão detalhada e gestão de campanhas, conjuntos e anúncios.</p>
                     </header>
                     <div id="campaigns-content" class="space-y-4"></div>
                 </div>
@@ -195,9 +204,7 @@
                     rawAdData = data.data;
                     
                     processAndDisplayDashboard(rawAdData);
-                    
-                    const activeData = rawAdData.filter(ad => ad.effective_status === 'ACTIVE');
-                    processAndDisplayCampaigns(activeData);
+                    processAndDisplayCampaigns(rawAdData);
 
                     document.getElementById('loading-state').classList.add('hidden');
                     document.getElementById('views-container').classList.remove('hidden');
@@ -232,8 +239,10 @@
         }
         
         function setupAccordions() {
-            document.querySelectorAll('[data-accordion-trigger]').forEach(trigger => {
-                trigger.addEventListener('click', () => {
+            // Usa delegação de eventos para funcionar com conteúdo dinâmico
+            document.body.addEventListener('click', function(event) {
+                const trigger = event.target.closest('[data-accordion-trigger]');
+                if (trigger) {
                     const content = trigger.nextElementSibling;
                     const icon = trigger.querySelector('svg');
                     if (content.style.maxHeight) {
@@ -243,56 +252,100 @@
                         content.style.maxHeight = content.scrollHeight + "px";
                         if(icon) icon.style.transform = 'rotate(180deg)';
                     }
-                });
+                }
             });
         }
+        
+        // --- FUNÇÕES DE PROCESSAMENTO DE DADOS (CAMPANHAS) ---
         function processAndDisplayCampaigns(data) {
             const campaigns = {};
             data.forEach(ad => {
-                if (!ad.campaign) return;
+                if (!ad.campaign || !ad.insights?.data?.[0]) return;
+
                 const campaignName = ad.campaign.name;
                 const adsetName = ad.adset.name;
                 const adName = ad.name;
-
-                if (!campaigns[campaignName]) campaigns[campaignName] = { spend: 0, purchases: 0, adsets: {} };
-                if (!campaigns[campaignName].adsets[adsetName]) campaigns[campaignName].adsets[adsetName] = { spend: 0, purchases: 0, ads: [] };
-
                 const insights = ad.insights.data[0];
-                if(!insights) return;
-                
+
+                // Estrutura de dados
+                if (!campaigns[campaignName]) {
+                    campaigns[campaignName] = { spend: 0, purchases: 0, revenue: 0, adsets: {} };
+                }
+                if (!campaigns[campaignName].adsets[adsetName]) {
+                    campaigns[campaignName].adsets[adsetName] = { spend: 0, purchases: 0, revenue: 0, ads: [] };
+                }
+
+                // Métricas
                 const spend = parseFloat(insights.spend || 0);
                 const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
+                const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
 
+                // Agregação
                 campaigns[campaignName].spend += spend;
                 campaigns[campaignName].purchases += purchases;
-                campaigns[campaignName].adsets[adsetName].spend += spend;
-                campaigns[campaignName].adsets[adsetName].purchases += purchases;
-                campaigns[campaignName].adsets[adsetName].ads.push({ name: adName, spend, purchases });
+                campaigns[campaignName].revenue += revenue;
+
+                const adset = campaigns[campaignName].adsets[adsetName];
+                adset.spend += spend;
+                adset.purchases += purchases;
+                adset.revenue += revenue;
+                adset.ads.push({
+                    name: adName,
+                    spend,
+                    purchases,
+                    revenue,
+                    ctr: parseFloat(insights.ctr || 0),
+                    cpc: parseFloat(insights.cpc || 0),
+                    thumbnail_url: ad.ad_creative?.thumbnail_url
+                });
             });
             renderCampaignsView(campaigns);
         }
 
+        // --- FUNÇÕES DE RENDERIZAÇÃO (CAMPANHAS) ---
         function renderCampaignsView(campaigns) {
             const container = document.getElementById('campaigns-content');
             container.innerHTML = '';
+
+            if (Object.keys(campaigns).length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-center py-10">Nenhuma campanha encontrada no período selecionado.</p>';
+                return;
+            }
             
             Object.entries(campaigns).forEach(([campaignName, campaign]) => {
+                const campaignRoas = campaign.spend > 0 ? (campaign.revenue / campaign.spend) : 0;
                 let adsetsHtml = '';
+
                 Object.entries(campaign.adsets).forEach(([adsetName, adset]) => {
+                    const adsetRoas = adset.spend > 0 ? (adset.revenue / adset.spend) : 0;
                     let adsHtml = '';
+                    
                     adset.ads.forEach(ad => {
-                        adsHtml += `<div class="flex justify-between p-2 bg-slate-100 rounded">
-                                        <span class="text-sm">${ad.name}</span>
-                                        <span class="text-sm font-medium">R$ ${ad.spend.toFixed(2)} | ${ad.purchases} vendas</span>
-                                    </div>`;
+                        const adRoas = ad.spend > 0 ? (ad.revenue / ad.spend) : 0;
+                        const creativeHtml = ad.thumbnail_url 
+                            ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-20 h-20 object-cover rounded-lg">`
+                            : `<div class="thumbnail-placeholder"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
+
+                        adsHtml += `
+                            <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg">
+                                ${creativeHtml}
+                                <div class="flex-1">
+                                    <p class="font-semibold text-slate-800">${ad.name}</p>
+                                </div>
+                                <div class="text-right text-sm space-y-1">
+                                    <p>ROAS: <span class="font-bold">${adRoas.toFixed(2)}</span></p>
+                                    <p>Invest.: <span class="font-semibold">R$ ${ad.spend.toFixed(2)}</span></p>
+                                    <p>CTR: <span class="font-semibold">${ad.ctr.toFixed(2)}%</span></p>
+                                </div>
+                            </div>`;
                     });
 
                     adsetsHtml += `
                         <div class="ml-4 mt-2">
-                            <button data-accordion-trigger class="w-full flex justify-between items-center p-3 bg-white rounded-lg shadow-sm text-left">
+                            <button data-accordion-trigger class="w-full flex justify-between items-center p-3 bg-white rounded-lg shadow-sm text-left hover:bg-slate-50">
                                 <span class="font-semibold">${adsetName}</span>
                                 <div class="flex items-center gap-4">
-                                    <span class="font-bold">R$ ${adset.spend.toFixed(2)} | ${adset.purchases} vendas</span>
+                                    <span class="font-bold">ROAS: ${adsetRoas.toFixed(2)}</span>
                                     <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </button>
@@ -301,22 +354,20 @@
                 });
 
                 container.innerHTML += `
-                    <div class="bg-slate-200/50 rounded-xl p-4">
+                    <div class="bg-slate-100 rounded-xl p-4">
                         <button data-accordion-trigger class="w-full flex justify-between items-center text-left">
                             <span class="text-lg font-bold">${campaignName}</span>
                              <div class="flex items-center gap-4">
-                                <span class="text-lg font-extrabold">R$ ${campaign.spend.toFixed(2)} | ${campaign.purchases} vendas</span>
+                                <span class="text-lg font-extrabold">ROAS Total: ${campaignRoas.toFixed(2)}</span>
                                 <svg class="w-6 h-6 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </button>
                         <div data-accordion-content class="pt-2">${adsetsHtml}</div>
                     </div>`;
             });
-            if (container.innerHTML === '') {
-                container.innerHTML = '<p class="text-slate-500 text-center py-10">Nenhuma campanha ativa encontrada no período selecionado.</p>';
-            }
         }
         
+        // --- FUNÇÕES DE PROCESSAMENTO E RENDERIZAÇÃO (DASHBOARD) ---
         function processAndDisplayDashboard(data) {
             const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
             const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
@@ -397,7 +448,7 @@
             const sortedAdsets = Object.entries(adsets).sort(([,a], [,b]) => b.spend - a.spend);
 
             sortedAdsets.forEach(([name, data]) => {
-                if(data.spend === 0) return; // Não mostra conjuntos que não gastaram no período
+                if(data.spend === 0) return;
                 
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
@@ -445,6 +496,7 @@
             if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto a otimizar encontrado no período.</p>';
         }
         
+        // --- FUNÇÕES DE INTERAÇÃO (MODAIS, AÇÕES) ---
         function confirmStatusChange(adsetId, adsetName, newStatus) {
             const modal = document.getElementById('confirmation-modal');
             const actionText = newStatus === 'PAUSED' ? 'pausar' : 'ativar';
@@ -478,7 +530,7 @@
             })
             .then(res => res.json())
             .then(result => {
-                if (result.success) {
+                if (result.success || result.id) {
                     showToast(`Conjunto ${status === 'PAUSED' ? 'pausado' : 'ativado'} com sucesso!`, 'success');
                     fetchAdData(accessToken);
                 } else {
@@ -498,7 +550,7 @@
             })
             .then(res => res.json())
             .then(result => {
-                if(result.success) {
+                if(result.success || result.id) {
                     showToast('Orçamento atualizado com sucesso!', 'success');
                     input.blur();
                 } else {
@@ -525,4 +577,3 @@
     </script>
 </body>
 </html>
-
