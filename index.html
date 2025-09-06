@@ -18,7 +18,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-    <!-- Notificações e Modais (sem alterações) -->
+    <!-- Notificações e Modais -->
     <div id="toast-notification" class="fixed top-5 right-5 z-50 transition-transform transform translate-x-full"></div>
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
@@ -63,7 +63,6 @@
                         <p class="text-slate-500 mt-1">Análise de Performance para Tomada de Decisão</p>
                     </header>
                     <div id="dashboard-content" class="space-y-10">
-                        <!-- **ATUALIZAÇÃO AQUI**: Adicionados seletores de data -->
                         <div class="grid grid-cols-1 md:grid-cols-5 gap-6" id="controls-container">
                             <div class="bg-white p-4 rounded-xl shadow-sm">
                                 <label for="start-date" class="block text-sm font-medium text-slate-700">Data de Início</label>
@@ -129,7 +128,6 @@
             const urlParams = new URLSearchParams(window.location.search);
             accessToken = urlParams.get('access_token');
             
-            // **ATUALIZAÇÃO AQUI**: Define as datas padrão ao carregar a página
             setDefaultDates();
 
             if (accessToken) {
@@ -140,13 +138,12 @@
                     url.searchParams.delete('access_token');
                     window.history.replaceState({ path: url.href }, '', url.href);
                 }
-                fetchAdData(accessToken); // Busca os dados do período padrão
+                fetchAdData(accessToken);
             } else {
                 document.getElementById('login-section').classList.remove('hidden');
             }
             setupNavigation();
             
-            // **ATUALIZAÇÃO AQUI**: O botão agora busca dados do período selecionado
             document.getElementById('reanalyze-button').addEventListener('click', () => {
                 if (accessToken) {
                     fetchAdData(accessToken);
@@ -162,7 +159,7 @@
             
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setDate(endDate.getDate() - 29); // 30 dias de período
+            startDate.setDate(endDate.getDate() - 29);
 
             const formatDate = (date) => date.toISOString().split('T')[0];
 
@@ -175,7 +172,6 @@
             document.getElementById('views-container').classList.add('hidden');
             document.getElementById('error-container').classList.add('hidden');
             
-            // **ATUALIZAÇÃO AQUI**: Pega as datas dos inputs
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
             
@@ -214,7 +210,6 @@
                 });
         }
         
-        // --- O restante do JavaScript (setupNavigation, setupAccordions, processAndDisplayCampaigns, etc.) permanece o mesmo ---
         function setupNavigation() {
             const navLinks = document.querySelectorAll('.nav-link');
             navLinks.forEach(link => {
@@ -254,6 +249,7 @@
         function processAndDisplayCampaigns(data) {
             const campaigns = {};
             data.forEach(ad => {
+                if (!ad.campaign) return;
                 const campaignName = ad.campaign.name;
                 const adsetName = ad.adset.name;
                 const adName = ad.name;
@@ -328,7 +324,7 @@
             let adsets = {};
 
             data.forEach(ad => {
-                if (!ad.insights?.data?.[0]) return;
+                if (!ad.insights?.data?.[0] || !ad.adset) return;
                 const insights = ad.insights.data[0];
                 const adsetName = ad.adset.name;
                 
@@ -401,6 +397,8 @@
             const sortedAdsets = Object.entries(adsets).sort(([,a], [,b]) => b.spend - a.spend);
 
             sortedAdsets.forEach(([name, data]) => {
+                if(data.spend === 0) return; // Não mostra conjuntos que não gastaram no período
+                
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
                 const meetsRoas = roas >= roasGoal;
@@ -444,7 +442,7 @@
                 }
             });
             if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto atingiu as metas para escalar no período.</p>';
-            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Todos os conjuntos estão performando dentro das metas no período!</p>';
+            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto a otimizar encontrado no período.</p>';
         }
         
         function confirmStatusChange(adsetId, adsetName, newStatus) {
