@@ -16,40 +16,50 @@
         [data-accordion-content] { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .thumbnail-placeholder {
             width: 80px; height: 80px;
-            background-color: #e2e8f0; /* slate-200 */
+            background-color: #334155; /* slate-700 */
             border-radius: 0.5rem; /* rounded-lg */
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #64748b; /* slate-500 */
+            color: #94a3b8; /* slate-400 */
+        }
+        /* Estilos para inputs em modo escuro */
+        .dark-input {
+            background-color: #334155; /* slate-700 */
+            border-color: #475569;   /* slate-600 */
+            color: #f1f5f9;          /* slate-100 */
+        }
+        .dark-input:focus {
+            border-color: #4f46e5; /* indigo-600 */
+            ring: #4f46e5;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-900 text-slate-300">
 
     <!-- Notificações e Modais -->
     <div id="toast-notification" class="fixed top-5 right-5 z-50 transition-transform transform translate-x-full"></div>
-    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
-            <h3 class="text-lg font-bold" id="modal-title">Confirmar Ação</h3>
-            <p class="text-slate-600 my-4" id="modal-body">Tem certeza?</p>
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden items-center justify-center">
+        <div class="bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold text-slate-100" id="modal-title">Confirmar Ação</h3>
+            <p class="text-slate-400 my-4" id="modal-body">Tem certeza?</p>
             <div class="flex justify-center gap-4">
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Cancelar</button>
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-slate-600 text-slate-100 rounded-md hover:bg-slate-500">Cancelar</button>
                 <button id="modal-confirm-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Confirmar</button>
             </div>
         </div>
     </div>
 
     <div class="flex h-screen">
-        <aside class="w-64 bg-white shadow-md p-6 flex-col hidden md:flex">
-            <h1 class="text-2xl font-extrabold text-slate-900">CJOTA</h1>
-            <p class="text-sm text-slate-500 mb-8">Analytics</p>
+        <aside class="w-64 bg-slate-800 shadow-md p-6 flex-col hidden md:flex">
+            <h1 class="text-2xl font-extrabold text-slate-100">CJOTA</h1>
+            <p class="text-sm text-slate-400 mb-8">Analytics</p>
             <nav id="sidebar-nav" class="flex flex-col gap-4">
-                <a href="#dashboard" class="nav-link flex items-center gap-3 px-4 py-2 bg-blue-50 text-blue-700 font-bold rounded-lg">
+                <a href="#dashboard" class="nav-link flex items-center gap-3 px-4 py-2 bg-blue-600/20 text-blue-300 font-bold rounded-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" /></svg>
                     Dashboard
                 </a>
-                <a href="#campaigns" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-600 font-bold rounded-lg hover:bg-slate-100">
+                <a href="#campaigns" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" /></svg>
                     Campanhas
                 </a>
@@ -57,39 +67,40 @@
         </aside>
 
         <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-            <section id="login-section" class="max-w-xl mx-auto bg-white p-10 rounded-xl shadow-sm text-center">
-                 <h2 class="text-2xl font-semibold mb-4">Bem-vindo(a)</h2>
-                <p class="text-slate-600 mb-6">Para gerir e analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
-                <button onclick="window.location.href='/.netlify/functions/api/login'" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm hover:shadow-lg">
-                    Conectar com Facebook
-                </button>
-            </section>
-
-            <div id="views-container" class="hidden">
+            <div id="views-container">
                 <div id="dashboard-view">
                      <header class="text-left mb-10">
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Dashboard Estratégico</h2>
-                        <p class="text-slate-500 mt-1">Análise de Performance para Tomada de Decisão</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Dashboard Estratégico</h2>
+                        <p class="text-slate-400 mt-1">Análise de Performance para Tomada de Decisão</p>
                     </header>
-                    <div id="dashboard-content" class="space-y-10">
+                    
+                    <section id="login-section" class="max-w-xl mx-auto bg-slate-800 border border-slate-700 p-10 rounded-xl shadow-lg text-center">
+                         <h2 class="text-2xl font-semibold text-slate-100 mb-4">Bem-vindo(a)</h2>
+                        <p class="text-slate-400 mb-6">Para gerir e analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
+                        <button onclick="window.location.href='/.netlify/functions/api/login'" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm hover:shadow-lg">
+                            Conectar com Facebook
+                        </button>
+                    </section>
+
+                    <div id="dashboard-content" class="space-y-10 hidden">
                         <div class="grid grid-cols-1 md:grid-cols-5 gap-6" id="controls-container">
-                            <div class="bg-white p-4 rounded-xl shadow-sm">
-                                <label for="start-date" class="block text-sm font-medium text-slate-700">Data de Início</label>
-                                <input type="date" id="start-date" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
+                                <label for="start-date" class="block text-sm font-medium text-slate-400">Data de Início</label>
+                                <input type="date" id="start-date" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
-                            <div class="bg-white p-4 rounded-xl shadow-sm">
-                                <label for="end-date" class="block text-sm font-medium text-slate-700">Data de Fim</label>
-                                <input type="date" id="end-date" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
+                                <label for="end-date" class="block text-sm font-medium text-slate-400">Data de Fim</label>
+                                <input type="date" id="end-date" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
-                             <div class="bg-white p-4 rounded-xl shadow-sm">
-                                <label for="roas-goal" class="block text-sm font-medium text-slate-700">Meta de ROAS</label>
-                                <input type="number" id="roas-goal" value="6.0" step="0.1" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                             <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
+                                <label for="roas-goal" class="block text-sm font-medium text-slate-400">Meta de ROAS</label>
+                                <input type="number" id="roas-goal" value="6.0" step="0.1" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
-                            <div class="bg-white p-4 rounded-xl shadow-sm">
-                                <label for="cpa-goal" class="block text-sm font-medium text-slate-700">Teto de CPA (R$)</label>
-                                <input type="number" id="cpa-goal" value="30.00" step="0.50" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
+                                <label for="cpa-goal" class="block text-sm font-medium text-slate-400">Teto de CPA (R$)</label>
+                                <input type="number" id="cpa-goal" value="30.00" step="0.50" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
-                            <div class="bg-white p-4 rounded-xl shadow-sm flex items-end">
+                            <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700 flex items-end">
                                 <button id="reanalyze-button" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
                                     Analisar Período
                                 </button>
@@ -97,12 +108,12 @@
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6" id="kpi-grid"></div>
                         <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            <div class="bg-white p-6 rounded-xl shadow-sm">
-                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-green-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>A Escalar (Lucro Alto)</h3>
+                            <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
+                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-green-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>A Escalar (Lucro Alto)</h3>
                                 <div id="escala-content" class="space-y-4"></div>
                             </div>
-                            <div class="bg-white p-6 rounded-xl shadow-sm">
-                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>A Otimizar (Prejuízo/Lucro Baixo)</h3>
+                            <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
+                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>A Otimizar (Prejuízo/Lucro Baixo)</h3>
                                 <div id="otimiza-content" class="space-y-4"></div>
                             </div>
                         </div>
@@ -111,18 +122,18 @@
 
                 <div id="campaigns-view" class="hidden">
                     <header class="text-left mb-10">
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Gestão de Campanhas</h2>
-                        <p class="text-slate-500 mt-1">Visão detalhada e gestão de campanhas, conjuntos e anúncios.</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Gestão de Campanhas</h2>
+                        <p class="text-slate-400 mt-1">Visão detalhada e gestão de campanhas, conjuntos e anúncios.</p>
                     </header>
-                    <div id="campaigns-content" class="space-y-4"></div>
+                    <div id="campaigns-content" class="space-y-6"></div>
                 </div>
             </div>
 
             <div id="loading-state" class="hidden text-center py-20">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p class="mt-4 text-lg font-medium text-slate-700">A carregar e analisar os seus dados...</p>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                <p class="mt-4 text-lg font-medium text-slate-400">A carregar e analisar os seus dados...</p>
             </div>
-            <div id="error-container" class="hidden max-w-2xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+            <div id="error-container" class="hidden max-w-2xl mx-auto bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-lg" role="alert">
                 <strong class="font-bold">Ocorreu um Erro!</strong>
                 <span class="block" id="error-message"></span>
             </div>
@@ -136,12 +147,14 @@
         window.onload = function () {
             const urlParams = new URLSearchParams(window.location.search);
             accessToken = urlParams.get('access_token');
+            const loginSection = document.getElementById('login-section');
+            const dashboardContent = document.getElementById('dashboard-content');
             
             setDefaultDates();
 
             if (accessToken) {
-                document.getElementById('login-section').classList.add('hidden');
-                document.getElementById('views-container').classList.remove('hidden');
+                loginSection.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
                 if (window.history.replaceState) {
                     const url = new URL(window.location.href);
                     url.searchParams.delete('access_token');
@@ -149,7 +162,8 @@
                 }
                 fetchAdData(accessToken);
             } else {
-                document.getElementById('login-section').classList.remove('hidden');
+                loginSection.classList.remove('hidden');
+                dashboardContent.classList.add('hidden');
             }
             setupNavigation();
             
@@ -178,7 +192,8 @@
 
         function fetchAdData(token) {
             document.getElementById('loading-state').classList.remove('hidden');
-            document.getElementById('views-container').classList.add('hidden');
+            document.getElementById('dashboard-content').classList.add('hidden');
+            document.getElementById('campaigns-view').classList.add('hidden');
             document.getElementById('error-container').classList.add('hidden');
             
             const startDate = document.getElementById('start-date').value;
@@ -187,7 +202,7 @@
             if (!startDate || !endDate) {
                 showToast('Por favor, selecione uma data de início e de fim.', 'error');
                 document.getElementById('loading-state').classList.add('hidden');
-                document.getElementById('views-container').classList.remove('hidden');
+                 document.getElementById('dashboard-content').classList.remove('hidden');
                 return;
             }
 
@@ -207,7 +222,7 @@
                     processAndDisplayCampaigns(rawAdData);
 
                     document.getElementById('loading-state').classList.add('hidden');
-                    document.getElementById('views-container').classList.remove('hidden');
+                    document.getElementById('dashboard-content').classList.remove('hidden');
                     setupAccordions();
                 })
                 .catch(error => {
@@ -225,11 +240,11 @@
                     const targetId = link.getAttribute('href').substring(1);
                     
                     navLinks.forEach(l => {
-                        l.classList.remove('bg-blue-50', 'text-blue-700');
-                        l.classList.add('text-slate-600', 'hover:bg-slate-100');
+                        l.classList.remove('bg-blue-600/20', 'text-blue-300');
+                        l.classList.add('text-slate-400', 'hover:bg-slate-700', 'hover:text-slate-200');
                     });
-                    link.classList.add('bg-blue-50', 'text-blue-700');
-                    link.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                    link.classList.add('bg-blue-600/20', 'text-blue-300');
+                    link.classList.remove('text-slate-400', 'hover:bg-slate-700', 'hover:text-slate-200');
 
                     document.getElementById('dashboard-view').classList.add('hidden');
                     document.getElementById('campaigns-view').classList.add('hidden');
@@ -239,13 +254,12 @@
         }
         
         function setupAccordions() {
-            // Usa delegação de eventos para funcionar com conteúdo dinâmico
             document.body.addEventListener('click', function(event) {
                 const trigger = event.target.closest('[data-accordion-trigger]');
                 if (trigger) {
                     const content = trigger.nextElementSibling;
-                    const icon = trigger.querySelector('svg');
-                    if (content.style.maxHeight) {
+                    const icon = trigger.querySelector('svg.transition-transform');
+                    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
                         content.style.maxHeight = null;
                         if(icon) icon.style.transform = 'rotate(0deg)';
                     } else {
@@ -256,188 +270,84 @@
             });
         }
         
-        // --- FUNÇÕES DE PROCESSAMENTO DE DADOS (CAMPANHAS) ---
         function processAndDisplayCampaigns(data) {
             const campaigns = {};
             data.forEach(ad => {
                 if (!ad.campaign || !ad.insights?.data?.[0]) return;
-
                 const campaignName = ad.campaign.name;
                 const adsetName = ad.adset.name;
                 const adName = ad.name;
                 const insights = ad.insights.data[0];
-
-                // Estrutura de dados
-                if (!campaigns[campaignName]) {
-                    campaigns[campaignName] = { spend: 0, purchases: 0, revenue: 0, adsets: {} };
-                }
-                if (!campaigns[campaignName].adsets[adsetName]) {
-                    campaigns[campaignName].adsets[adsetName] = { spend: 0, purchases: 0, revenue: 0, ads: [] };
-                }
-
-                // Métricas
+                if (!campaigns[campaignName]) campaigns[campaignName] = { spend: 0, purchases: 0, revenue: 0, adsets: {} };
+                if (!campaigns[campaignName].adsets[adsetName]) campaigns[campaignName].adsets[adsetName] = { spend: 0, purchases: 0, revenue: 0, ads: [] };
                 const spend = parseFloat(insights.spend || 0);
                 const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
                 const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
-
-                // Agregação
                 campaigns[campaignName].spend += spend;
                 campaigns[campaignName].purchases += purchases;
                 campaigns[campaignName].revenue += revenue;
-
                 const adset = campaigns[campaignName].adsets[adsetName];
                 adset.spend += spend;
                 adset.purchases += purchases;
                 adset.revenue += revenue;
-                adset.ads.push({
-                    name: adName,
-                    spend,
-                    purchases,
-                    revenue,
-                    ctr: parseFloat(insights.ctr || 0),
-                    cpc: parseFloat(insights.cpc || 0),
-                    thumbnail_url: ad.ad_creative?.thumbnail_url
-                });
+                adset.ads.push({ name: adName, spend, purchases, revenue, ctr: parseFloat(insights.ctr || 0), cpc: parseFloat(insights.cpc || 0), thumbnail_url: ad.ad_creative?.thumbnail_url });
             });
             renderCampaignsView(campaigns);
         }
 
-        // --- FUNÇÕES DE RENDERIZAÇÃO (CAMPANHAS) ---
         function renderCampaignsView(campaigns) {
             const container = document.getElementById('campaigns-content');
             container.innerHTML = '';
-
             if (Object.keys(campaigns).length === 0) {
                 container.innerHTML = '<p class="text-slate-500 text-center py-10">Nenhuma campanha encontrada no período selecionado.</p>';
                 return;
             }
-            
             const campaignCardsHtml = Object.entries(campaigns).map(([campaignName, campaign]) => {
                 const campaignRoas = campaign.spend > 0 ? (campaign.revenue / campaign.spend) : 0;
                 const campaignCpa = campaign.purchases > 0 ? (campaign.spend / campaign.purchases) : 0;
-
                 const adsetsHtml = Object.entries(campaign.adsets).map(([adsetName, adset]) => {
                     const adsetRoas = adset.spend > 0 ? (adset.revenue / adset.spend) : 0;
                     const adsetCpa = adset.purchases > 0 ? (adset.spend / adset.purchases) : 0;
-                    
                     const adsHtml = adset.ads.map(ad => {
                         const adRoas = ad.spend > 0 ? (ad.revenue / ad.spend) : 0;
                         const creativeHtml = ad.thumbnail_url 
                             ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
                             : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
-
-                        return `
-                            <div class="flex items-center gap-4 p-4 bg-white rounded-lg border border-slate-200">
-                                ${creativeHtml}
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-semibold text-slate-800 truncate" title="${ad.name}">${ad.name}</p>
-                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-600 mt-2">
-                                        <p>Invest.: <span class="font-bold text-slate-800">R$ ${ad.spend.toFixed(2)}</span></p>
-                                        <p>Compras: <span class="font-bold text-slate-800">${ad.purchases}</span></p>
-                                        <p>ROAS: <span class="font-bold text-slate-800">${adRoas.toFixed(2)}</span></p>
-                                        <p>CTR: <span class="font-bold text-slate-800">${ad.ctr.toFixed(2)}%</span></p>
-                                    </div>
-                                </div>
-                            </div>`;
+                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">R$ ${ad.spend.toFixed(2)}</span></p><p>Compras: <span class="font-bold text-slate-200">${ad.purchases}</span></p><p>ROAS: <span class="font-bold text-slate-200">${adRoas.toFixed(2)}</span></p><p>CTR: <span class="font-bold text-slate-200">${ad.ctr.toFixed(2)}%</span></p></div></div></div>`;
                     }).join('');
-
-                    return `
-                        <div class="bg-slate-100/80 rounded-lg p-1">
-                            <button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-white rounded-lg shadow-sm text-left hover:bg-slate-50">
-                                <div>
-                                    <p class="font-bold text-slate-800">${adsetName}</p>
-                                    <div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mt-1">
-                                        <span>Invest.: <span class="font-semibold text-slate-700">R$ ${adset.spend.toFixed(2)}</span></span>
-                                        <span>ROAS: <span class="font-semibold text-slate-700">${adsetRoas.toFixed(2)}</span></span>
-                                        <span>CPA: <span class="font-semibold text-slate-700">R$ ${adsetCpa.toFixed(2)}</span></span>
-                                    </div>
-                                </div>
-                                <svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
-                            <div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div>
-                        </div>`;
+                    return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adsetName}</p><div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-1"><span>Invest.: <span class="font-semibold text-slate-300">R$ ${adset.spend.toFixed(2)}</span></span><span>ROAS: <span class="font-semibold text-slate-300">${adsetRoas.toFixed(2)}</span></span><span>CPA: <span class="font-semibold text-slate-300">R$ ${adsetCpa.toFixed(2)}</span></span></div></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
                 }).join('');
-
                 const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
                 const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
-
-                return `
-                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                        <button data-accordion-trigger class="w-full p-6 text-left bg-white hover:bg-slate-50/50 transition-colors duration-200">
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-xl font-extrabold text-slate-800 pr-4">${campaignName}</h3>
-                                <div class="flex items-center gap-2 flex-shrink-0">
-                                   <span class="text-sm text-slate-500 hidden sm:inline">Ver detalhes</span>
-                                   <svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                            </div>
-                            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div class="p-2 rounded-lg bg-slate-50/70 text-center">
-                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">Investimento</p>
-                                    <p class="text-lg sm:text-2xl font-bold text-slate-900">R$ ${campaign.spend.toFixed(2)}</p>
-                                </div>
-                                 <div class="p-2 rounded-lg bg-slate-50/70 text-center">
-                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">Receita</p>
-                                    <p class="text-lg sm:text-2xl font-bold text-slate-900">R$ ${campaign.revenue.toFixed(2)}</p>
-                                </div>
-                                <div class="p-2 rounded-lg bg-slate-50/70 text-center">
-                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">ROAS</p>
-                                    <p class="text-lg sm:text-2xl font-bold ${campaignRoas >= roasGoal ? 'text-green-600' : 'text-red-600'}">${campaignRoas.toFixed(2)}</p>
-                                </div>
-                                <div class="p-2 rounded-lg bg-slate-50/70 text-center">
-                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">CPA</p>
-                                    <p class="text-lg sm:text-2xl font-bold ${campaignCpa > 0 && campaignCpa <= cpaGoal ? 'text-green-600' : 'text-red-600'}">R$ ${campaignCpa.toFixed(2)}</p>
-                                </div>
-                            </div>
-                        </button>
-                        <div data-accordion-content class="p-4 md:p-6 bg-slate-50 border-t border-slate-200 space-y-4">
-                            ${adsetsHtml}
-                        </div>
-                    </div>`;
+                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaignName}</h3><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Investimento</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.spend.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Receita</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.revenue.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">ROAS</p><p class="text-lg sm:text-2xl font-bold ${campaignRoas >= roasGoal ? 'text-green-400' : 'text-red-400'}">${campaignRoas.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">CPA</p><p class="text-lg sm:text-2xl font-bold ${campaignCpa > 0 && campaignCpa <= cpaGoal ? 'text-green-400' : 'text-red-400'}">R$ ${campaignCpa.toFixed(2)}</p></div></div></button><div data-accordion-content class="p-4 md:p-6 bg-slate-800/50 border-t border-slate-700 space-y-4">${adsetsHtml}</div></div>`;
             }).join('');
-            
             container.innerHTML = campaignCardsHtml;
         }
         
-        // --- FUNÇÕES DE PROCESSAMENTO E RENDERIZAÇÃO (DASHBOARD) ---
         function processAndDisplayDashboard(data) {
             const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
             const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
             let totalSpend = 0, totalRevenue = 0, totalPurchases = 0;
             let adsets = {};
-
             data.forEach(ad => {
                 if (!ad.insights?.data?.[0] || !ad.adset) return;
                 const insights = ad.insights.data[0];
                 const adsetName = ad.adset.name;
-                
-                if (!adsets[adsetName]) {
-                    adsets[adsetName] = { 
-                        id: ad.adset.id,
-                        status: ad.adset.effective_status,
-                        budget: (parseFloat(ad.adset.daily_budget) / 100) || 0,
-                        spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 
-                    };
-                }
-                
+                if (!adsets[adsetName]) adsets[adsetName] = { id: ad.adset.id, status: ad.adset.effective_status, budget: (parseFloat(ad.adset.daily_budget) / 100) || 0, spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
                 const spend = parseFloat(insights.spend || 0);
                 totalSpend += spend;
                 adsets[adsetName].spend += spend;
-
                 const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
                 totalPurchases += purchases;
                 adsets[adsetName].purchases += purchases;
-                
                 const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
                 totalRevenue += revenue;
                 adsets[adsetName].revenue += revenue;
-
                 adsets[adsetName].ctr += parseFloat(insights.ctr || 0);
                 adsets[adsetName].cpm += parseFloat(insights.cpm || 0);
                 adsets[adsetName].cpc += parseFloat(insights.cpc || 0);
                 adsets[adsetName].adCount++;
             });
-
             for (const name in adsets) {
                 if (adsets[name].adCount > 0) {
                     adsets[name].ctr /= adsets[name].adCount;
@@ -445,10 +355,8 @@
                     adsets[name].cpc /= adsets[name].adCount;
                 }
             }
-
             const overallROAS = totalSpend > 0 ? (totalRevenue / totalSpend) : 0;
             const overallCPA = totalPurchases > 0 ? (totalSpend / totalPurchases) : 0;
-
             displayKPIs(totalSpend, totalRevenue, totalPurchases, overallROAS, overallCPA, roasGoal, cpaGoal);
             displayStrategicPanels(adsets, roasGoal, cpaGoal);
         }
@@ -457,18 +365,15 @@
             const kpiGrid = document.getElementById('kpi-grid');
             kpiGrid.innerHTML = ''; 
             const kpis = [
-                { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}`, color: 'slate-900' },
-                { label: 'Receita Total', value: `R$ ${revenue.toFixed(2)}`, color: 'slate-900' },
-                { label: 'Compras', value: purchases, color: 'slate-900' },
-                { label: 'ROAS Geral', value: roas.toFixed(2), color: roas >= roasGoal ? 'green-600' : 'red-600' },
-                { label: 'CPA Geral', value: `R$ ${cpa.toFixed(2)}`, color: cpa > 0 && cpa <= cpaGoal ? 'green-600' : 'red-600' }
+                { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
+                { label: 'Receita Total', value: `R$ ${revenue.toFixed(2)}` },
+                { label: 'Compras', value: purchases },
+                { label: 'ROAS Geral', value: roas.toFixed(2), isGood: roas >= roasGoal },
+                { label: 'CPA Geral', value: `R$ ${cpa.toFixed(2)}`, isGood: cpa > 0 && cpa <= cpaGoal }
             ];
             kpis.forEach(kpi => {
-                kpiGrid.innerHTML += `
-                    <div class="kpi-card bg-white p-4 rounded-xl shadow-sm text-center">
-                        <p class="text-sm font-medium text-slate-500">${kpi.label}</p>
-                        <p class="text-2xl font-bold mt-1 text-${kpi.color}">${kpi.value}</p>
-                    </div>`;
+                const colorClass = kpi.hasOwnProperty('isGood') ? (kpi.isGood ? 'text-green-400' : 'text-red-400') : 'text-slate-100';
+                kpiGrid.innerHTML += `<div class="kpi-card bg-slate-800 p-4 rounded-xl shadow-sm text-center border border-slate-700"><p class="text-sm font-medium text-slate-400">${kpi.label}</p><p class="text-2xl font-bold mt-1 ${colorClass}">${kpi.value}</p></div>`;
             });
         }
 
@@ -476,120 +381,50 @@
             const escalaContent = document.getElementById('escala-content');
             const otimizaContent = document.getElementById('otimiza-content');
             escalaContent.innerHTML = otimizaContent.innerHTML = '';
-
             const sortedAdsets = Object.entries(adsets).sort(([,a], [,b]) => b.spend - a.spend);
-
             sortedAdsets.forEach(([name, data]) => {
                 if(data.spend === 0) return;
-                
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
                 const meetsRoas = roas >= roasGoal;
                 const meetsCpa = cpa > 0 && cpa <= cpaGoal;
                 const isActive = data.status === 'ACTIVE';
-
-                const statusBtnClass = isActive ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200';
+                const statusBtnClass = isActive ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30' : 'bg-green-500/20 text-green-300 hover:bg-green-500/30';
                 const statusBtnText = isActive ? 'Pausar' : 'Ativar';
                 const newStatus = isActive ? 'PAUSED' : 'ACTIVE';
-
-                const cardHtml = `
-                    <div class="adset-card border p-4 rounded-lg bg-slate-100/70">
-                        <div class="flex justify-between items-start">
-                             <p class="font-bold text-slate-800 pr-2">${name}</p>
-                             <span class="text-xs font-semibold px-2 py-1 rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}">${data.status}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3">
-                            <span>ROAS: <span class="${roas >= roasGoal ? 'text-green-600' : 'text-red-600'} font-semibold">${roas.toFixed(2)}</span></span>
-                            <span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-600' : 'text-red-600'} font-semibold">R$ ${cpa.toFixed(2)}</span></span>
-                            <span>CTR: <span class="font-semibold">${data.ctr.toFixed(2)}%</span></span>
-                            <span>CPM: <span class="font-semibold">R$ ${data.cpm.toFixed(2)}</span></span>
-                            <span>CPC: <span class="font-semibold">R$ ${data.cpc.toFixed(2)}</span></span>
-                            <span>Invest.: <span class="font-semibold">R$ ${data.spend.toFixed(2)}</span></span>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-slate-200 flex justify-between items-center gap-4">
-                            <div class="flex items-center gap-2">
-                               <label for="budget-${data.id}" class="text-sm font-medium">Orçamento:</label>
-                               <input type="number" id="budget-${data.id}" value="${data.budget.toFixed(2)}" step="1" class="budget-input p-1 rounded-md border-slate-300 shadow-sm text-sm">
-                               <button onclick="updateBudget('${data.id}')" class="text-xs bg-slate-200 hover:bg-slate-300 font-bold p-2 rounded-md">Salvar</button>
-                            </div>
-                            <button onclick="confirmStatusChange('${data.id}', '${name.replace(/'/g, "\\'")}', '${newStatus}')" data-adset-id-status="${data.id}" class="btn-action font-semibold py-2 px-3 rounded-lg text-sm ${statusBtnClass}">
-                                ${statusBtnText}
-                            </button>
-                        </div>
-                    </div>`;
-
-                if (meetsRoas && meetsCpa) {
-                    escalaContent.innerHTML += cardHtml;
-                } else {
-                    otimizaContent.innerHTML += cardHtml;
-                }
+                const cardHtml = `<div class="adset-card border p-4 rounded-lg bg-slate-700/50 border-slate-600"><div class="flex justify-between items-start"><p class="font-bold text-slate-200 pr-2">${name}</p><span class="text-xs font-semibold px-2 py-1 rounded-full ${isActive ? 'bg-green-500/20 text-green-300' : 'bg-slate-600 text-slate-300'}">${data.status}</span></div><div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3 text-slate-400"><span>ROAS: <span class="${roas >= roasGoal ? 'text-green-400' : 'text-red-400'} font-semibold">${roas.toFixed(2)}</span></span><span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-400' : 'text-red-400'} font-semibold">R$ ${cpa.toFixed(2)}</span></span><span>CTR: <span class="font-semibold text-slate-200">${data.ctr.toFixed(2)}%</span></span><span>CPM: <span class="font-semibold text-slate-200">R$ ${data.cpm.toFixed(2)}</span></span><span>CPC: <span class="font-semibold text-slate-200">R$ ${data.cpc.toFixed(2)}</span></span><span>Invest.: <span class="font-semibold text-slate-200">R$ ${data.spend.toFixed(2)}</span></span></div><div class="mt-4 pt-4 border-t border-slate-600 flex justify-between items-center gap-4"><div class="flex items-center gap-2"><label for="budget-${data.id}" class="text-sm font-medium text-slate-400">Orçamento:</label><input type="number" id="budget-${data.id}" value="${data.budget.toFixed(2)}" step="1" class="budget-input p-1 rounded-md shadow-sm text-sm dark-input"><button onclick="updateBudget('${data.id}')" class="text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 font-bold p-2 rounded-md">Salvar</button></div><button onclick="confirmStatusChange('${data.id}', '${name.replace(/'/g, "\\'")}', '${newStatus}')" class="btn-action font-semibold py-2 px-3 rounded-lg text-sm ${statusBtnClass}">${statusBtnText}</button></div></div>`;
+                if (meetsRoas && meetsCpa) escalaContent.innerHTML += cardHtml;
+                else otimizaContent.innerHTML += cardHtml;
             });
             if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto atingiu as metas para escalar no período.</p>';
             if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto a otimizar encontrado no período.</p>';
         }
         
-        // --- FUNÇÕES DE INTERAÇÃO (MODAIS, AÇÕES) ---
         function confirmStatusChange(adsetId, adsetName, newStatus) {
             const modal = document.getElementById('confirmation-modal');
             const actionText = newStatus === 'PAUSED' ? 'pausar' : 'ativar';
             document.getElementById('modal-title').innerText = `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Conjunto`;
             document.getElementById('modal-body').innerText = `Tem certeza de que deseja ${actionText} o conjunto "${adsetName}"?`;
-            
             const confirmBtn = document.getElementById('modal-confirm-btn');
             confirmBtn.className = `px-4 py-2 text-white rounded-md ${newStatus === 'PAUSED' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`;
             confirmBtn.innerText = 'Confirmar';
-
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-
-            const confirmHandler = () => {
-                updateAdsetStatus(adsetId, newStatus);
-                closeModal();
-            };
-            
+            const confirmHandler = () => { updateAdsetStatus(adsetId, newStatus); closeModal(); };
             confirmBtn.addEventListener('click', confirmHandler, { once: true });
-            document.getElementById('modal-cancel-btn').addEventListener('click', () => {
-                closeModal();
-                confirmBtn.removeEventListener('click', confirmHandler);
-            }, { once: true });
+            document.getElementById('modal-cancel-btn').addEventListener('click', () => { closeModal(); confirmBtn.removeEventListener('click', confirmHandler); }, { once: true });
         }
 
         function updateAdsetStatus(adsetId, status) {
-            fetch('/.netlify/functions/api/update-adset-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: accessToken, adset_id: adsetId, status: status })
-            })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success || result.id) {
-                    showToast(`Conjunto ${status === 'PAUSED' ? 'pausado' : 'ativado'} com sucesso!`, 'success');
-                    fetchAdData(accessToken);
-                } else {
-                    throw new Error(result.details?.error?.message || 'Falha ao atualizar o status.');
-                }
-            })
-            .catch(error => showToast(`Erro: ${error.message}`, 'error'));
+            fetch('/.netlify/functions/api/update-adset-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: accessToken, adset_id: adsetId, status: status }) })
+            .then(res => res.json()).then(result => { if (result.success || result.id) { showToast(`Conjunto ${status === 'PAUSED' ? 'pausado' : 'ativado'} com sucesso!`, 'success'); fetchAdData(accessToken); } else { throw new Error(result.details?.error?.message || 'Falha ao atualizar o status.'); } }).catch(error => showToast(`Erro: ${error.message}`, 'error'));
         }
         
         function updateBudget(adsetId) {
             const input = document.getElementById(`budget-${adsetId}`);
             const newBudget = input.value;
-            fetch('/.netlify/functions/api/update-adset-budget', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: accessToken, adset_id: adsetId, daily_budget: newBudget })
-            })
-            .then(res => res.json())
-            .then(result => {
-                if(result.success || result.id) {
-                    showToast('Orçamento atualizado com sucesso!', 'success');
-                    input.blur();
-                } else {
-                    throw new Error(result.details?.error?.message || 'Falha ao atualizar o orçamento.');
-                }
-            })
-            .catch(error => showToast(`Erro: ${error.message}`, 'error'));
+            fetch('/.netlify/functions/api/update-adset-budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: accessToken, adset_id: adsetId, daily_budget: newBudget }) })
+            .then(res => res.json()).then(result => { if(result.success || result.id) { showToast('Orçamento atualizado com sucesso!', 'success'); input.blur(); } else { throw new Error(result.details?.error?.message || 'Falha ao atualizar o orçamento.'); } }).catch(error => showToast(`Erro: ${error.message}`, 'error'));
         }
         
         function closeModal() {
