@@ -6,10 +6,10 @@ const app = express();
 const router = express.Router();
 
 // --- CONFIGURAÇÃO (!! IMPORTANTE !!) ---
-// Substitua os valores abaixo pelos seus.
-const META_APP_ID = 'YOUR_APP_ID'; // COLE AQUI O SEU APP ID
-const META_APP_SECRET = 'YOUR_APP_SECRET'; // COLE AQUI A SUA CHAVE SECRETA
-const AD_ACCOUNT_ID = 'act_YOUR_AD_ACCOUNT_ID'; // COLE AQUI O ID DA SUA CONTA DE ANÚNCIOS
+// Suas chaves foram inseridas aqui. Falta apenas o ID da Conta de Anúncios.
+const META_APP_ID = '3755817441221932'; // SEU APP ID
+const META_APP_SECRET = 'ebdf65238ee5cba4d721688090f98c8d'; // SUA CHAVE SECRETA
+const AD_ACCOUNT_ID = 'act_1244920119465862'; // SUBSTITUA AQUI PELO ID DA SUA CONTA DE ANÚNCIOS
 
 // --- Lógica da API ---
 const getRedirectUri = (event) => {
@@ -81,5 +81,4 @@ router.get('/ad-data', async (req, res) => {
 
 app.use('/.netlify/functions/api', router);
 module.exports.handler = serverless(app);
-
 
