@@ -4,6 +4,11 @@
   # Diretório que contém as nossas funções serverless
   functions = "netlify/functions"
 
+# Aumenta o tempo limite da função para 26 segundos
+# para acomodar pedidos mais longos à API do Facebook.
+[functions]
+  timeout = 26
+
 [[redirects]]
   # Redireciona todos os pedidos que começam com /api/ para a nossa função 'api'
   from = "/api/*"
