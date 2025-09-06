@@ -7,8 +7,8 @@ const router = express.Router();
 
 // --- CONFIGURAÇÃO (!! IMPORTANTE !!) ---
 // Suas chaves foram inseridas aqui. Falta apenas o ID da Conta de Anúncios.
-const META_APP_ID = '3755817441221932'; // SEU APP ID
-const META_APP_SECRET = 'ebdf65238ee5cba4d721688090f98c8d'; // SUA CHAVE SECRETA
+const META_APP_ID = '1282670113401964'; // SEU APP ID
+const META_APP_SECRET = 'e866c4ebd088bf10f0818b5d75a83151'; // SUA CHAVE SECRETA
 const AD_ACCOUNT_ID = 'act_1244920119465862'; // SUBSTITUA AQUI PELO ID DA SUA CONTA DE ANÚNCIOS
 
 // --- Lógica da API ---
