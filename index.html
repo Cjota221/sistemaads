@@ -100,7 +100,6 @@
                 document.getElementById('analysis-section').classList.remove('hidden');
                 document.getElementById('loading-state').classList.remove('hidden');
                 
-                // Limpa o token da URL para não ficar visível
                 if (window.history.replaceState) {
                     const url = new URL(window.location.href);
                     url.searchParams.delete('access_token');
@@ -109,7 +108,6 @@
 
                 fetchAdData(accessToken);
             } else {
-                // Se não houver token, mostra a secção de login
                 document.getElementById('login-section').classList.remove('hidden');
                 document.getElementById('analysis-section').classList.add('hidden');
             }
@@ -125,20 +123,13 @@
         function fetchAdData(token) {
             fetch(`/.netlify/functions/api/data?token=${token}`)
                 .then(response => {
-                    // **NOVA LÓGICA DE ERRO - MAIS ROBUSTA**
-                    // Se a resposta não for 'ok' (ex: status 400, 500), tratamos como erro
                     if (!response.ok) {
-                        // Tentamos obter o corpo da resposta como texto para ver o que o servidor enviou
                         return response.text().then(text => {
                             let errorDetails = text;
                             try {
-                                // Tentamos analisar como JSON para um erro estruturado
                                 const jsonError = JSON.parse(text);
                                 errorDetails = JSON.stringify(jsonError.details || jsonError, null, 2);
-                            } catch (e) {
-                                // Se não for JSON, usamos o texto bruto
-                            }
-                            // Lançamos um erro que será capturado pelo .catch()
+                            } catch (e) { /* Usa o texto bruto */ }
                             throw new Error(`O servidor respondeu com status ${response.status}. Detalhes: ${errorDetails}`);
                         });
                     }
@@ -146,7 +137,7 @@
                 })
                 .then(data => {
                     if (data.data) {
-                        rawAdData = data.data; // Armazena os dados brutos
+                        rawAdData = data.data; 
                         processAndDisplayData(rawAdData);
                     } else {
                         throw new Error("A resposta da API não continha o campo 'data' esperado.");
@@ -170,19 +161,27 @@
             let totalPurchases = 0;
             let adsets = {};
 
+            // **CORREÇÃO AQUI** - A lógica foi adaptada para o novo formato dos dados
             data.forEach(ad => {
-                const spend = parseFloat(ad.spend || 0);
+                // Pula o anúncio se não houver dados de insights para ele
+                if (!ad.insights || !ad.insights.data || ad.insights.data.length === 0) {
+                    return; 
+                }
+                const insights = ad.insights.data[0];
+
+                const spend = parseFloat(insights.spend || 0);
                 totalSpend += spend;
 
-                const purchaseAction = ad.actions?.find(a => a.action_type === 'purchase');
+                const purchaseAction = insights.actions?.find(a => a.action_type === 'purchase');
                 const purchases = parseInt(purchaseAction?.value || 0);
                 totalPurchases += purchases;
                 
-                const revenueAction = ad.action_values?.find(a => a.action_type === 'purchase');
+                const revenueAction = insights.action_values?.find(a => a.action_type === 'purchase');
                 const revenue = parseFloat(revenueAction?.value || 0);
                 totalRevenue += revenue;
 
-                const adsetName = ad.adset_name;
+                // Usa o nome do conjunto de anúncios do objeto aninhado
+                const adsetName = ad.adset.name;
                 if (!adsets[adsetName]) {
                     adsets[adsetName] = { spend: 0, revenue: 0, purchases: 0 };
                 }
@@ -198,7 +197,6 @@
             displayKPIs(totalSpend, totalRevenue, totalPurchases, overallROAS, overallCPA, roasGoal, cpaGoal);
             displayStrategicPanels(adsets, roasGoal, cpaGoal);
             
-            // Exibe o conteúdo do dashboard
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('error-container').classList.add('hidden');
             document.getElementById('dashboard-content').classList.remove('hidden');
@@ -207,7 +205,7 @@
         // --- FUNÇÕES AUXILIARES DE EXIBIÇÃO ---
         function displayKPIs(spend, revenue, purchases, roas, cpa, roasGoal, cpaGoal) {
             const kpiGrid = document.getElementById('kpi-grid');
-            kpiGrid.innerHTML = ''; // Limpa antes de adicionar
+            kpiGrid.innerHTML = ''; 
 
             const kpis = [
                 { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
@@ -249,7 +247,7 @@
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
 
                 const meetsRoas = roas >= roasGoal;
-                const meetsCpa = cpa > 0 && cpa <= cpaGoal; // CPA só é bom se for maior que zero e abaixo da meta
+                const meetsCpa = cpa > 0 && cpa <= cpaGoal;
 
                 const cardHtml = `
                     <div class="border p-4 rounded-lg bg-gray-50">
