@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Estratégico - v18</title>
+    <title>Dashboard Estratégico - v19.1 (API)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -20,7 +17,6 @@
         .action-card p { font-size: 0.875rem; line-height: 1.6; }
         .action-card strong { color: #60a5fa; }
         #error-banner { display: none; }
-        .disabled-section { opacity: 0.5; pointer-events: none; }
         .budget-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
         .tag-scale { background-color: #166534; color: #dcfce7; }
         .tag-maintain { background-color: #9a3412; color: #ffedd5; }
@@ -32,8 +28,8 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-white mb-2">Dashboard Estratégico v18</h1>
-            <p class="text-lg text-gray-400">A sua ferramenta de análise e planeamento de orçamento.</p>
+            <h1 class="text-4xl font-bold text-white mb-2">Dashboard Estratégico v19.1</h1>
+            <p class="text-lg text-gray-400">Análise em tempo real com a API do Meta.</p>
         </header>
 
         <!-- Banner de Erro -->
@@ -42,32 +38,28 @@
             <span class="block sm:inline" id="error-message"></span>
         </div>
         
-        <!-- Seção de Upload -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg">
-                <h3 class="text-xl font-semibold text-white mb-4 text-center">Passo 1: Configuração de Segurança</h3>
-                <label for="adAccountId" class="block mb-2 text-sm font-medium text-gray-400 text-center">ID da Sua Conta de Anúncios</label>
-                <div class="flex items-center gap-4">
-                    <input type="text" id="adAccountId" value="1244920119465862" class="kpi-input flex-grow">
-                    <button id="saveIdBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition">Salvar ID</button>
-                </div>
-                <p id="saveStatus" class="text-green-400 text-center text-sm mt-2 h-4"></p>
-            </div>
-
-            <div id="analysis-section" class="bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg transition-opacity">
-                 <h3 class="text-xl font-semibold text-white mb-4 text-center">Passo 2: Análise do Relatório</h3>
-                <label for="metaCsvFile" class="mb-2 text-center text-sm text-gray-300 block">Carregue o seu relatório (.csv):</label>
-                <input type="file" id="metaCsvFile" accept=".csv" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500 cursor-pointer">
-                <button id="analyzeBtn" class="mt-8 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                    Analisar Dados
-                </button>
-            </div>
+        <!-- Seção de Conexão -->
+        <div id="connection-section" class="bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg text-center mb-12 max-w-2xl mx-auto">
+            <h3 class="text-xl font-semibold text-white mb-4">Passo 1: Conecte a sua Conta de Anúncios</h3>
+            <p class="text-gray-400 mb-6">Autorize o dashboard a aceder aos dados da sua conta de anúncios do Meta de forma segura.</p>
+            <button id="loginBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105">
+                Conectar com o Facebook
+            </button>
         </div>
 
+        <!-- Seção de Análise (inicialmente escondida) -->
+        <div id="analysis-section" class="hidden bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg text-center mb-12 max-w-2xl mx-auto">
+            <h3 class="text-xl font-semibold text-white mb-4">Passo 2: Analisar Dados</h3>
+            <p class="text-gray-400 mb-6" id="status-text">Conectado com sucesso! Clique abaixo para carregar os dados dos últimos 30 dias.</p>
+             <button id="analyzeBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                Analisar Dados da Conta
+            </button>
+        </div>
+
+
         <div id="results" class="hidden mt-12">
-            
-            <!-- Seção de Metas -->
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
+             <!-- Seção de Metas, Filtros e o resto do dashboard... (idêntico à v18) -->
+             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
                 <h2 class="text-2xl font-bold text-center text-white mb-4">As Nossas Metas de Lucratividade</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-lg mx-auto">
                     <div><label for="roasGoal" class="block mb-2 text-sm font-medium text-gray-400 text-center">Meta de ROAS</label><input type="number" id="roasGoal" value="6.0" step="0.1" class="kpi-input"></div>
@@ -76,7 +68,6 @@
                 <div id="managerContext" class="text-center text-gray-400 mt-6 text-sm bg-gray-900/50 p-4 rounded-md"></div>
             </div>
 
-             <!-- Filtros -->
             <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-8">
                 <h2 class="text-xl font-bold text-center text-white mb-4">Filtros da Análise</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -86,10 +77,8 @@
                 </div>
             </div>
 
-            <!-- Métricas Essenciais -->
             <div id="metricsSection" class="mb-8"><div id="financialMetrics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10"></div></div>
             
-             <!-- Planeador de Orçamento -->
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
                 <h2 class="text-3xl font-bold text-center text-white mb-2">Planeador de Orçamento Diário</h2>
                 <p class="text-center text-gray-400 mb-6">Receba uma sugestão de como distribuir o seu próximo orçamento diário.</p>
@@ -100,7 +89,6 @@
                 <div id="budgetPlanResults" class="mt-8"></div>
             </div>
             
-            <!-- Painel de Destaques -->
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
                 <h2 class="text-3xl font-bold text-center text-white mb-8">Destaques da Conta</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -110,7 +98,6 @@
                 </div>
             </div>
 
-             <!-- Painéis Estratégicos -->
             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
                 <h2 class="text-3xl font-bold text-center text-white mb-8">Painel Estratégico de Conjuntos</h2>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -129,139 +116,104 @@
     </div>
 
     <script>
+        // --- Variáveis Globais ---
+        let allData = [];
+        let accessToken = null;
+
+        // --- Elementos do DOM ---
         const elements = {
-            analyzeBtn: document.getElementById('analyzeBtn'), metaCsvFile: document.getElementById('metaCsvFile'), resultsDiv: document.getElementById('results'), analysisSection: document.getElementById('analysis-section'), campaignFilter: document.getElementById('campaignFilter'), adSetFilter: document.getElementById('adSetFilter'), audienceFilter: document.getElementById('audienceFilter'), roasGoal: document.getElementById('roasGoal'), cpaGoal: document.getElementById('cpaGoal'), adAccountId: document.getElementById('adAccountId'), saveIdBtn: document.getElementById('saveIdBtn'), saveStatus: document.getElementById('saveStatus'), errorBanner: document.getElementById('error-banner'), errorTitle: document.getElementById('error-title'), errorMessage: document.getElementById('error-message'), managerContext: document.getElementById('managerContext'), financialMetrics: document.getElementById('financialMetrics'), topSpendCampaigns: document.getElementById('topSpendCampaigns'), topSellingAdSets: document.getElementById('topSellingAdSets'), topSellingAds: document.getElementById('topSellingAds'), goodAdSets: document.getElementById('goodAdSets'), badAdSets: document.getElementById('badAdSets'),
-            goodCreatives: document.getElementById('goodCreatives'),
-            badCreatives: document.getElementById('badCreatives'),
-            dailyBudgetInput: document.getElementById('dailyBudgetInput'),
-            planBudgetBtn: document.getElementById('planBudgetBtn'),
-            budgetPlanResults: document.getElementById('budgetPlanResults'),
+            loginBtn: document.getElementById('loginBtn'),
+            analyzeBtn: document.getElementById('analyzeBtn'),
+            connectionSection: document.getElementById('connection-section'),
+            analysisSection: document.getElementById('analysis-section'),
+            statusText: document.getElementById('status-text'),
+            resultsDiv: document.getElementById('results'),
+            errorBanner: document.getElementById('error-banner'),
+            errorTitle: document.getElementById('error-title'),
+            errorMessage: document.getElementById('error-message'),
+            campaignFilter: document.getElementById('campaignFilter'), adSetFilter: document.getElementById('adSetFilter'), audienceFilter: document.getElementById('audienceFilter'), roasGoal: document.getElementById('roasGoal'), cpaGoal: document.getElementById('cpaGoal'), managerContext: document.getElementById('managerContext'), financialMetrics: document.getElementById('financialMetrics'), topSpendCampaigns: document.getElementById('topSpendCampaigns'), topSellingAdSets: document.getElementById('topSellingAdSets'), topSellingAds: document.getElementById('topSellingAds'), goodAdSets: document.getElementById('goodAdSets'), badAdSets: document.getElementById('badAdSets'),
+            goodCreatives: document.getElementById('goodCreatives'), badCreatives: document.getElementById('badCreatives'), dailyBudgetInput: document.getElementById('dailyBudgetInput'), planBudgetBtn: document.getElementById('planBudgetBtn'), budgetPlanResults: document.getElementById('budgetPlanResults'),
         };
 
-        let allData = [];
-
         // --- Event Listeners ---
-        elements.metaCsvFile.addEventListener('change', () => elements.analyzeBtn.disabled = !elements.metaCsvFile.files.length);
+        elements.loginBtn.addEventListener('click', () => {
+            window.location.href = '/api/login';
+        });
+        
         elements.analyzeBtn.addEventListener('click', handleAnalysis);
-        elements.saveIdBtn.addEventListener('click', saveAdAccountId);
         elements.planBudgetBtn.addEventListener('click', displayBudgetPlan);
         [elements.campaignFilter, elements.adSetFilter, elements.audienceFilter, elements.roasGoal, elements.cpaGoal].forEach(el => el.addEventListener('input', updateDashboard));
         
+        // --- Lógica de Inicialização ---
         window.addEventListener('load', () => {
-            const savedId = localStorage.getItem('adAccountId');
-            if (savedId) {
-                elements.adAccountId.value = savedId;
-                elements.analysisSection.classList.remove('disabled-section');
-            } else {
-                 elements.analysisSection.classList.add('disabled-section');
+            const hash = window.location.hash;
+            if (hash.includes('access_token')) {
+                accessToken = hash.split('=')[1].split('&')[0];
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+                elements.connectionSection.classList.add('hidden');
+                elements.analysisSection.classList.remove('hidden');
             }
         });
         
-        function saveAdAccountId() {
-            const id = elements.adAccountId.value.trim();
-            if (id) {
-                localStorage.setItem('adAccountId', id);
-                elements.saveStatus.textContent = 'ID salvo com sucesso! Já pode carregar o seu relatório.';
-                elements.analysisSection.classList.remove('disabled-section');
-                setTimeout(() => { elements.saveStatus.textContent = ''; }, 3000);
-            } else {
-                 elements.saveStatus.textContent = 'Por favor, insira um ID válido.';
-                 setTimeout(() => { elements.saveStatus.textContent = ''; }, 3000);
-            }
-        }
-
-        // --- Core Logic ---
+        // --- Lógica Principal (API e Dashboard) ---
         async function handleAnalysis() {
+            if (!accessToken) {
+                showError("Não Autenticado", "Por favor, conecte-se com o Facebook primeiro.");
+                return;
+            }
             elements.analyzeBtn.textContent = 'A processar...';
             elements.analyzeBtn.disabled = true;
             elements.errorBanner.style.display = 'none';
 
-            const configuredId = localStorage.getItem('adAccountId');
-            if (!configuredId) {
-                showError('Acesso Negado!', 'Por favor, clique em "Salvar ID" no Passo 1 primeiro.');
-                elements.analyzeBtn.textContent = 'Analisar Dados';
-                elements.analyzeBtn.disabled = false; return;
-            }
-
-            const file = elements.metaCsvFile.files[0];
-
-            if (!file.name.toLowerCase().includes('cjota')) {
-                showError('Erro de Ficheiro!', 'O formato do relatório parece ser inválido. O nome do ficheiro deve conter "CJOTA".');
-                elements.analyzeBtn.textContent = 'Analisar Dados';
-                elements.analyzeBtn.disabled = false; return;
-            }
-
             try {
-                const results = await processFile(file, parseMetaRows);
-                if (!results || results.length === 0) { return; } 
-
-                const fileAdAccountId = results.find(d => d.adAccountId)?.adAccountId;
-                if (!fileAdAccountId) {
-                     showError('Erro de Leitura!', 'Não foi possível encontrar um ID de conta de anúncios no ficheiro. Verifique se a coluna "Identificação da conta" foi exportada.');
-                     return;
+                const response = await fetch('/api/ad-data', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Falha ao buscar dados.');
                 }
-                if (fileAdAccountId !== configuredId) {
-                    showError('Acesso Negado!', `Este relatório pertence à conta ${fileAdAccountId}, que é diferente da conta ${configuredId} configurada.`);
-                    return;
+                const apiData = await response.json();
+                
+                if (!apiData || apiData.length === 0) { 
+                    showError('Sem Dados', 'Nenhum dado de anúncio foi encontrado para o período selecionado.');
+                    return; 
                 }
 
-                allData = results;
+                allData = apiData.map(d => ({
+                    ...d,
+                    audienceType: (d.adSetName.toLowerCase().includes('quente') || d.adSetName.toLowerCase().includes('remarketing')) ? 'Público Quente (Remarketing)' : 'Público Frio (Novos)'
+                }));
+
                 populateFilters();
                 updateDashboard();
                 elements.resultsDiv.classList.remove('hidden');
+
             } catch (error) { 
                 console.error("Analysis failed:", error); 
-                showError("Erro Inesperado!", "Ocorreu um erro ao processar o ficheiro. Verifique o formato.");
-            } 
-            finally { 
-                elements.analyzeBtn.textContent = 'Analisar Dados'; 
+                showError("Erro ao Analisar", error.message);
+            } finally { 
+                elements.analyzeBtn.textContent = 'Analisar Dados da Conta'; 
                 elements.analyzeBtn.disabled = false; 
             }
         }
-
+        
         function showError(title, message) {
             elements.errorTitle.textContent = title;
             elements.errorMessage.textContent = message;
             elements.errorBanner.style.display = 'block';
             elements.resultsDiv.classList.add('hidden');
         }
-        
-        function processFile(file, rowParser) { return new Promise((resolve, reject) => { Papa.parse(file, { header: true, skipEmptyLines: true, complete: res => resolve(rowParser(res)), error: reject }); }); }
 
-        function parseMetaRows({ data, meta }) {
-            const find = (keys) => { for (const key of keys) { if (meta.fields.includes(key)) return key; } return null; };
-            const cols = { 
-                adAccountId: find(['ID da conta de anúncios', 'Identificação da conta']), date: find(['Início dos relatórios']), campaignName: find(['Nome da campanha']), adSetName: find(['Nome do conjunto de anúncios']), adName: find(['Nome do anúncio']), spent: find(['Valor usado (BRL)']), purchases: find(['Compras']), purchaseValue: find(['Valor de conversão da compra']), cpm: find(['CPM (custo por 1.000 impressões) (BRL)']), ctr: find(['CTR (todos)']), impressions: find(['Impressões']), reach: find(['Alcance']) 
-            };
-            
-            if (!cols.adAccountId) { showError('Erro de Ficheiro!', 'A coluna "ID da conta de anúncios" ou "Identificação da conta" é necessária. Por favor, exporte o relatório novamente, incluindo esta coluna.'); return []; }
-            if (!cols.adName) { showError('Erro de Ficheiro!', 'A coluna "Nome do anúncio" é essencial para a análise de criativos.'); return []; }
-
-            return data
-                .filter(row => row[cols.adName]) 
-                .map(row => {
-                    const spent = parseFloat(row[cols.spent]?.replace(',', '.') || 0);
-                    const purchaseValue = parseFloat(row[cols.purchaseValue]?.replace(',', '.') || 0);
-                    const adSetName = row[cols.adSetName] || 'N/A';
-                    const audienceType = adSetName.toLowerCase().includes('quente') || adSetName.toLowerCase().includes('remarketing') ? 'Público Quente (Remarketing)' : 'Público Frio (Novos)';
-                    return { adAccountId: row[cols.adAccountId], date: row[cols.date], campaignName: row[cols.campaignName] || 'N/A', adSetName, adName: row[cols.adName] || 'N/A', audienceType, spent, purchaseValue, purchases: parseInt(row[cols.purchases] || 0), roas: spent > 0 ? purchaseValue / spent : 0, cpm: parseFloat(row[cols.cpm]?.replace(',', '.') || 0), ctr: parseFloat(row[cols.ctr] || 0), impressions: parseInt(row[cols.impressions] || 0), reach: parseInt(row[cols.reach] || 0) };
-                })
-                .filter(d => d.spent > 0 || d.purchaseValue > 0);
-        }
-        
+        // ===============================================================================================
+        //  TODA A LÓGICA DE EXIBIÇÃO DA V18 (A PARTIR DAQUI) PODE SER MANTIDA QUASE NA ÍNTEGRA
+        // ===============================================================================================
         function populateFilters() {
              const populate = (select, options, defaultLabel) => {
                 select.innerHTML = `<option value="all">${defaultLabel}</option>`;
                 [...new Set(options)].sort().forEach(o => select.innerHTML += `<option value="${o}">${o}</option>`);
             };
-            const campaignNames = [...new Set(allData.map(d => d.campaignName))];
-            if (campaignNames.length > 0 && campaignNames[0] !== 'N/A') {
-                elements.campaignFilter.disabled = false;
-                populate(elements.campaignFilter, campaignNames, 'Todas as Campanhas');
-            } else {
-                elements.campaignFilter.innerHTML = '<option value="all">N/A</option>';
-                elements.campaignFilter.disabled = true;
-            }
+            populate(elements.campaignFilter, allData.map(d => d.campaignName), 'Todas as Campanhas');
             populate(elements.adSetFilter, allData.map(d => d.adSetName), 'Todos os Conjuntos');
             populate(elements.audienceFilter, allData.map(d => d.audienceType), 'Todos os Públicos');
         }
@@ -271,7 +223,6 @@
             const filters = { c: elements.campaignFilter.value, a: elements.adSetFilter.value, u: elements.audienceFilter.value };
             const filteredData = allData.filter(d => (filters.c === 'all' || d.campaignName === filters.c) && (filters.a === 'all' || d.adSetName === filters.a) && (filters.u === 'all' || d.audienceType === filters.u));
             const goals = { roas: parseFloat(elements.roasGoal.value) || 0, cpa: parseFloat(elements.cpaGoal.value) || 0 };
-            
             displayManagerContext(goals);
             displayMetrics(filteredData, goals);
             displayHighlights(filteredData);
@@ -299,7 +250,7 @@
 
         function displayMetrics(data, goals) {
             elements.financialMetrics.innerHTML = '';
-            const uniqueDays = new Set(data.map(d => d.date)).size;
+            const uniqueDays = 30; // Fixo, pois pedimos os últimos 30 dias na API
             const totals = data.reduce((acc, d) => {
                 acc.spent += d.spent; acc.revenue += d.purchaseValue; acc.purchases += d.purchases; return acc;
             }, { spent: 0, revenue: 0, purchases: 0 });
@@ -326,8 +277,7 @@
         function populateHighlightList(container, data, metric) {
             container.innerHTML = '';
             if (data.length === 0 || data.every(item => item[metric] === 0)) {
-                 container.innerHTML = '<p class="text-gray-500 text-center text-sm p-4">Nenhum dado relevante encontrado.</p>';
-                 return;
+                 container.innerHTML = '<p class="text-gray-500 text-center text-sm p-4">Nenhum dado relevante encontrado.</p>'; return;
             }
             const list = document.createElement('ul'); list.className = 'space-y-2 text-gray-300';
             data.forEach(item => {
@@ -386,38 +336,37 @@
                 const id = row[key];
                 if (!acc[id]) acc[id] = { key: id, spent: 0, purchaseValue: 0, purchases: 0, impressions: 0, reach: 0, clicks: 0, cpmSum: 0 };
                 acc[id].spent += row.spent; acc[id].purchaseValue += row.purchaseValue; acc[id].purchases += row.purchases;
-                acc[id].impressions += row.impressions; acc[id].reach += row.reach; acc[id].clicks += (row.ctr / 100 * row.impressions); acc[id].cpmSum += row.cpm * row.impressions;
+                acc[id].impressions += row.impressions; acc[id].reach += row.reach;
+                const rowClicks = (row.ctr / 100) * row.impressions;
+                acc[id].clicks += isNaN(rowClicks) ? 0 : rowClicks;
+                const rowCpmSum = row.cpm * row.impressions;
+                acc[id].cpmSum += isNaN(rowCpmSum) ? 0 : rowCpmSum;
                 return acc;
             }, {});
             return Object.values(aggregated).map(d => {
-                const roas = d.spent > 0 ? d.purchaseValue / d.spent : 0;
                 const cpa = d.purchases > 0 ? d.spent / d.purchases : 0;
                 const cpm = d.impressions > 0 ? d.cpmSum / d.impressions : 0;
                 const ctr = d.impressions > 0 ? (d.clicks / d.impressions) * 100 : 0;
                 const frequency = d.reach > 0 ? d.impressions / d.reach : 0;
-                return {...d, roas, cpa, cpm, ctr, frequency};
+                return {...d, roas: d.roas, cpa, cpm, ctr, frequency}; // ROAS vem direto da API agora
             });
         }
         
         function displayBudgetPlan() {
             const totalBudget = parseFloat(elements.dailyBudgetInput.value);
             if (!totalBudget || totalBudget <= 0 || allData.length === 0) {
-                elements.budgetPlanResults.innerHTML = '';
-                return;
+                elements.budgetPlanResults.innerHTML = ''; return;
             }
             const goals = { roas: parseFloat(elements.roasGoal.value) || 0, cpa: parseFloat(elements.cpaGoal.value) || 0 };
             if (goals.roas <= 0 || goals.cpa <= 0) {
-                elements.budgetPlanResults.innerHTML = '<p class="text-center text-amber-400 mt-4">Por favor, defina as metas de ROAS e CPA para gerar um plano.</p>';
-                return;
+                elements.budgetPlanResults.innerHTML = '<p class="text-center text-amber-400 mt-4">Por favor, defina as metas de ROAS e CPA para gerar um plano.</p>'; return;
             }
             const filters = { c: elements.campaignFilter.value, a: elements.adSetFilter.value, u: elements.audienceFilter.value };
             const filteredData = allData.filter(d => (filters.c === 'all' || d.campaignName === filters.c) && (filters.a === 'all' || d.adSetName === filters.a) && (filters.u === 'all' || d.audienceType === filters.u));
-
             const adSetAgg = aggregateData(filteredData, 'adSetName');
             const budgetAllocation = { scale: 0.6, maintain: 0.3, test: 0.1 };
             const categories = { scale: [], maintain: [], pause: [] };
             let totalScore = 0;
-
             adSetAgg.forEach(set => {
                 if (set.roas >= goals.roas * 1.2 && set.cpa <= goals.cpa * 0.8) {
                     set.score = set.roas / set.cpa; totalScore += set.score; categories.scale.push(set);
@@ -427,7 +376,6 @@
                     categories.maintain.push(set);
                 }
             });
-
             let tableHTML = `<div class="overflow-x-auto mt-6"><table class="w-full text-sm text-left text-gray-300"><thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="px-6 py-3">Conjunto de Anúncios</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Orçamento Sugerido</th></tr></thead><tbody>`;
             if (totalScore > 0) {
                 categories.scale.forEach(set => {
@@ -452,5 +400,4 @@
     </script>
 </body>
 </html>
-
 
