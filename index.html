@@ -3,399 +3,432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Estratégico - v19.1 (API)</title>
+    <title>Dashboard Estratégico CJOTA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .stat-card { background-color: #1F2937; border: 1px solid #374151; border-radius: 0.75rem; padding: 1.5rem; transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: center; }
-        .kpi-input { background-color: #374151; border: 1px solid #4b5563; color: white; text-align: center; font-weight: bold; border-radius: 0.5rem; padding: 0.5rem 1rem; width: 100%; }
-        .good { color: #22c55e; }
-        .bad { color: #ef4444; }
-        .action-card { background-color: #1e293b; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; border-left-width: 4px; }
-        .action-card h4 { font-weight: 700; margin-bottom: 0.5rem; word-break: break-word; }
-        .action-card p { font-size: 0.875rem; line-height: 1.6; }
-        .action-card strong { color: #60a5fa; }
-        #error-banner { display: none; }
-        .budget-tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; }
-        .tag-scale { background-color: #166534; color: #dcfce7; }
-        .tag-maintain { background-color: #9a3412; color: #ffedd5; }
-        .tag-pause { background-color: #991b1b; color: #fee2e2; }
-        .placeholder-card { background-color: #1e293b; border-radius: 0.5rem; padding: 2rem; text-align: center; border: 2px dashed #374151; color: #6b7280; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .cjota-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        .cjota-card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+        .cjota-btn {
+            background-color: #1877f2;
+            color: white;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+        .cjota-btn:hover {
+            background-color: #166fe5;
+        }
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .metric-label {
+            color: #606770;
+            font-size: 0.9rem;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #1877f2;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
-
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-white mb-2">Dashboard Estratégico v19.1</h1>
-            <p class="text-lg text-gray-400">Análise em tempo real com a API do Meta.</p>
+<body class="p-4 sm:p-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <header class="text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Dashboard Estratégico CJOTA</h1>
+            <p class="text-lg text-gray-500 mt-2">Análise de Performance de Anúncios Meta</p>
         </header>
 
-        <!-- Banner de Erro -->
-        <div id="error-banner" class="bg-red-800 border border-red-600 text-white px-4 py-3 rounded-lg relative mb-6" role="alert">
-            <strong class="font-bold" id="error-title"></strong>
-            <span class="block sm:inline" id="error-message"></span>
+        <!-- Seção de Login -->
+        <div id="loginSection" class="cjota-card text-center">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Conecte-se à sua Conta Meta</h2>
+            <p class="text-gray-600 mb-6">Para analisar os dados, é necessário autorizar o acesso à sua conta de anúncios.</p>
+            <button id="loginBtn" class="cjota-btn inline-flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12Z" clip-rule="evenodd" /></svg>
+                Conectar com Facebook
+            </button>
+        </div>
+
+        <!-- Seção de Carregamento -->
+        <div id="loadingSection" class="hidden cjota-card text-center py-16">
+            <div class="spinner mx-auto mb-6"></div>
+            <h2 class="text-2xl font-semibold text-gray-700">A carregar dados...</h2>
+            <p class="text-gray-600">A conectar com a API do Meta. Isto pode levar alguns segundos.</p>
+        </div>
+
+        <!-- Seção de Erro -->
+        <div id="errorSection" class="hidden cjota-card text-center py-16 bg-red-50 border border-red-200">
+             <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h2 class="text-2xl font-semibold text-red-700">Ocorreu um Erro</h2>
+            <p id="errorMessage" class="text-red-600 mt-2">Não foi possível carregar os dados. Verifique a consola para mais detalhes.</p>
+            <button onclick="location.href='/'" class="mt-6 cjota-btn bg-red-600 hover:bg-red-700">Tentar Novamente</button>
         </div>
         
-        <!-- Seção de Conexão -->
-        <div id="connection-section" class="bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg text-center mb-12 max-w-2xl mx-auto">
-            <h3 class="text-xl font-semibold text-white mb-4">Passo 1: Conecte a sua Conta de Anúncios</h3>
-            <p class="text-gray-400 mb-6">Autorize o dashboard a aceder aos dados da sua conta de anúncios do Meta de forma segura.</p>
-            <button id="loginBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105">
-                Conectar com o Facebook
-            </button>
-        </div>
-
-        <!-- Seção de Análise (inicialmente escondida) -->
-        <div id="analysis-section" class="hidden bg-gray-800 border border-gray-700 rounded-xl p-8 shadow-lg text-center mb-12 max-w-2xl mx-auto">
-            <h3 class="text-xl font-semibold text-white mb-4">Passo 2: Analisar Dados</h3>
-            <p class="text-gray-400 mb-6" id="status-text">Conectado com sucesso! Clique abaixo para carregar os dados dos últimos 30 dias.</p>
-             <button id="analyzeBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                Analisar Dados da Conta
-            </button>
-        </div>
-
-
-        <div id="results" class="hidden mt-12">
-             <!-- Seção de Metas, Filtros e o resto do dashboard... (idêntico à v18) -->
-             <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
-                <h2 class="text-2xl font-bold text-center text-white mb-4">As Nossas Metas de Lucratividade</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-lg mx-auto">
-                    <div><label for="roasGoal" class="block mb-2 text-sm font-medium text-gray-400 text-center">Meta de ROAS</label><input type="number" id="roasGoal" value="6.0" step="0.1" class="kpi-input"></div>
-                    <div><label for="cpaGoal" class="block mb-2 text-sm font-medium text-gray-400 text-center">Teto de CPA (R$)</label><input type="number" id="cpaGoal" value="30" step="1" class="kpi-input"></div>
+        <!-- Conteúdo Principal do Dashboard -->
+        <main id="dashboardContent" class="hidden space-y-8">
+            <!-- Definição de Metas -->
+            <section class="cjota-card grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div class="md:col-span-1">
+                    <h2 class="text-xl font-bold text-gray-800">Metas de Negócio</h2>
+                    <p class="text-sm text-gray-500 mt-1">Baseado na margem de lucro real (produtos, taxas, impostos).</p>
                 </div>
-                <div id="managerContext" class="text-center text-gray-400 mt-6 text-sm bg-gray-900/50 p-4 rounded-md"></div>
-            </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:col-span-2">
+                    <div>
+                        <label for="roasGoal" class="block text-sm font-medium text-gray-700">Meta de ROAS</label>
+                        <input type="number" id="roasGoal" value="6.0" step="0.1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="cpaGoal" class="block text-sm font-medium text-gray-700">Teto de CPA (R$)</label>
+                        <input type="number" id="cpaGoal" value="30.00" step="1.00" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    </div>
+                </div>
+            </section>
 
-            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-8">
-                <h2 class="text-xl font-bold text-center text-white mb-4">Filtros da Análise</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div><label for="campaignFilter" class="block mb-2 text-sm font-medium text-gray-400">Campanha:</label><select id="campaignFilter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></select></div>
-                    <div><label for="adSetFilter" class="block mb-2 text-sm font-medium text-gray-400">Conjunto:</label><select id="adSetFilter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></select></div>
-                    <div><label for="audienceFilter" class="block mb-2 text-sm font-medium text-gray-400">Público:</label><select id="audienceFilter" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg block w-full p-2.5"></select></div>
-                </div>
-            </div>
+            <!-- Métricas Essenciais -->
+            <section id="metricsSection" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+                <!-- Os cards de métricas serão inseridos aqui pelo JavaScript -->
+            </section>
 
-            <div id="metricsSection" class="mb-8"><div id="financialMetrics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10"></div></div>
-            
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
-                <h2 class="text-3xl font-bold text-center text-white mb-2">Planeador de Orçamento Diário</h2>
-                <p class="text-center text-gray-400 mb-6">Receba uma sugestão de como distribuir o seu próximo orçamento diário.</p>
-                <div class="max-w-sm mx-auto flex items-center gap-4">
-                    <input type="number" id="dailyBudgetInput" placeholder="Ex: 200" class="kpi-input flex-grow">
-                    <button id="planBudgetBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition">Planear</button>
+             <!-- Destaques Rápidos -->
+            <section class="cjota-card">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Destaques Rápidos</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div id="topSpend">
+                        <h3 class="font-semibold text-gray-700 mb-2">📊 Top 5 Campanhas por Investimento</h3>
+                        <ul class="space-y-2 text-sm"></ul>
+                    </div>
+                    <div id="topAdsets">
+                         <h3 class="font-semibold text-gray-700 mb-2">💰 Top 5 Conjuntos Geradores de Vendas</h3>
+                        <ul class="space-y-2 text-sm"></ul>
+                    </div>
+                    <div id="topAds">
+                         <h3 class="font-semibold text-gray-700 mb-2">🖼️ Top 5 Anúncios Geradores de Vendas</h3>
+                        <ul class="space-y-2 text-sm"></ul>
+                    </div>
                 </div>
-                <div id="budgetPlanResults" class="mt-8"></div>
-            </div>
-            
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
-                <h2 class="text-3xl font-bold text-center text-white mb-8">Destaques da Conta</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div><h3 class="text-xl font-semibold text-blue-400 mb-4 text-center">Top 5 Maiores Investimentos</h3><div id="topSpendCampaigns" class="space-y-3"></div></div>
-                    <div><h3 class="text-xl font-semibold text-green-400 mb-4 text-center">Top 5 Geradores de Vendas (Conjunto)</h3><div id="topSellingAdSets" class="space-y-3"></div></div>
-                    <div><h3 class="text-xl font-semibold text-green-400 mb-4 text-center">Top 5 Geradores de Vendas (Anúncio)</h3><div id="topSellingAds" class="space-y-3"></div></div>
-                </div>
-            </div>
+            </section>
 
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
-                <h2 class="text-3xl font-bold text-center text-white mb-8">Painel Estratégico de Conjuntos</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div><h3 class="text-2xl font-semibold text-green-400 mb-4 text-center">A Escalar (Lucro Alto)</h3><div id="goodAdSets" class="space-y-4"></div></div>
-                    <div><h3 class="text-2xl font-semibold text-red-400 mb-4 text-center">A Otimizar (Prejuízo/Lucro Baixo)</h3><div id="badAdSets" class="space-y-4"></div></div>
+             <!-- Painéis Estratégicos -->
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="cjota-card bg-green-50 border border-green-200">
+                    <h2 class="text-xl font-bold text-green-800 mb-4">✅ A Escalar (Lucro Alto)</h2>
+                    <p class="text-sm text-green-700 mb-4">Conjuntos e anúncios que superam as metas. Aumentar o investimento aqui pode gerar mais lucro.</p>
+                    <div id="toScale" class="space-y-4"></div>
                 </div>
-            </div>
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 my-12">
-                <h2 class="text-3xl font-bold text-center text-white mb-8">Análise de Criativos (Anúncios)</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div><h3 class="text-2xl font-semibold text-green-400 mb-4 text-center">Criativos Campeões</h3><div id="goodCreatives" class="space-y-4"></div></div>
-                    <div><h3 class="text-2xl font-semibold text-red-400 mb-4 text-center">Criativos a Otimizar</h3><div id="badCreatives" class="space-y-4"></div></div>
+                <div class="cjota-card bg-red-50 border border-red-200">
+                    <h2 class="text-xl font-bold text-red-800 mb-4">❌ A Otimizar (Prejuízo/Lucro Baixo)</h2>
+                     <p class="text-sm text-red-700 mb-4">Conjuntos e anúncios com baixo desempenho. Ações são necessárias para evitar prejuízo.</p>
+                    <div id="toOptimize" class="space-y-4"></div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
     <script>
-        // --- Variáveis Globais ---
-        let allData = [];
-        let accessToken = null;
+        // Elementos da UI
+        const loginSection = document.getElementById('loginSection');
+        const loadingSection = document.getElementById('loadingSection');
+        const errorSection = document.getElementById('errorSection');
+        const errorMessageEl = document.getElementById('errorMessage');
+        const dashboardContent = document.getElementById('dashboardContent');
+        const loginBtn = document.getElementById('loginBtn');
 
-        // --- Elementos do DOM ---
-        const elements = {
-            loginBtn: document.getElementById('loginBtn'),
-            analyzeBtn: document.getElementById('analyzeBtn'),
-            connectionSection: document.getElementById('connection-section'),
-            analysisSection: document.getElementById('analysis-section'),
-            statusText: document.getElementById('status-text'),
-            resultsDiv: document.getElementById('results'),
-            errorBanner: document.getElementById('error-banner'),
-            errorTitle: document.getElementById('error-title'),
-            errorMessage: document.getElementById('error-message'),
-            campaignFilter: document.getElementById('campaignFilter'), adSetFilter: document.getElementById('adSetFilter'), audienceFilter: document.getElementById('audienceFilter'), roasGoal: document.getElementById('roasGoal'), cpaGoal: document.getElementById('cpaGoal'), managerContext: document.getElementById('managerContext'), financialMetrics: document.getElementById('financialMetrics'), topSpendCampaigns: document.getElementById('topSpendCampaigns'), topSellingAdSets: document.getElementById('topSellingAdSets'), topSellingAds: document.getElementById('topSellingAds'), goodAdSets: document.getElementById('goodAdSets'), badAdSets: document.getElementById('badAdSets'),
-            goodCreatives: document.getElementById('goodCreatives'), badCreatives: document.getElementById('badCreatives'), dailyBudgetInput: document.getElementById('dailyBudgetInput'), planBudgetBtn: document.getElementById('planBudgetBtn'), budgetPlanResults: document.getElementById('budgetPlanResults'),
-        };
+        // Lógica de inicialização da página
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const accessToken = urlParams.get('token');
+            const error = urlParams.get('error');
 
-        // --- Event Listeners ---
-        elements.loginBtn.addEventListener('click', () => {
-            window.location.href = '/api/login';
-        });
-        
-        elements.analyzeBtn.addEventListener('click', handleAnalysis);
-        elements.planBudgetBtn.addEventListener('click', displayBudgetPlan);
-        [elements.campaignFilter, elements.adSetFilter, elements.audienceFilter, elements.roasGoal, elements.cpaGoal].forEach(el => el.addEventListener('input', updateDashboard));
-        
-        // --- Lógica de Inicialização ---
-        window.addEventListener('load', () => {
-            const hash = window.location.hash;
-            if (hash.includes('access_token')) {
-                accessToken = hash.split('=')[1].split('&')[0];
-                history.pushState("", document.title, window.location.pathname + window.location.search);
-                elements.connectionSection.classList.add('hidden');
-                elements.analysisSection.classList.remove('hidden');
+            // Limpa os parâmetros da URL para uma aparência mais limpa
+            try {
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            } catch (e) {
+                console.warn("Could not clean URL: ", e);
             }
-        });
-        
-        // --- Lógica Principal (API e Dashboard) ---
-        async function handleAnalysis() {
-            if (!accessToken) {
-                showError("Não Autenticado", "Por favor, conecte-se com o Facebook primeiro.");
+
+
+            if (error) {
+                showError(`Erro de autenticação: ${error}`);
                 return;
             }
-            elements.analyzeBtn.textContent = 'A processar...';
-            elements.analyzeBtn.disabled = true;
-            elements.errorBanner.style.display = 'none';
 
-            try {
-                const response = await fetch('/api/ad-data', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Falha ao buscar dados.');
-                }
-                const apiData = await response.json();
-                
-                if (!apiData || apiData.length === 0) { 
-                    showError('Sem Dados', 'Nenhum dado de anúncio foi encontrado para o período selecionado.');
-                    return; 
-                }
-
-                allData = apiData.map(d => ({
-                    ...d,
-                    audienceType: (d.adSetName.toLowerCase().includes('quente') || d.adSetName.toLowerCase().includes('remarketing')) ? 'Público Quente (Remarketing)' : 'Público Frio (Novos)'
-                }));
-
-                populateFilters();
-                updateDashboard();
-                elements.resultsDiv.classList.remove('hidden');
-
-            } catch (error) { 
-                console.error("Analysis failed:", error); 
-                showError("Erro ao Analisar", error.message);
-            } finally { 
-                elements.analyzeBtn.textContent = 'Analisar Dados da Conta'; 
-                elements.analyzeBtn.disabled = false; 
-            }
-        }
-        
-        function showError(title, message) {
-            elements.errorTitle.textContent = title;
-            elements.errorMessage.textContent = message;
-            elements.errorBanner.style.display = 'block';
-            elements.resultsDiv.classList.add('hidden');
-        }
-
-        // ===============================================================================================
-        //  TODA A LÓGICA DE EXIBIÇÃO DA V18 (A PARTIR DAQUI) PODE SER MANTIDA QUASE NA ÍNTEGRA
-        // ===============================================================================================
-        function populateFilters() {
-             const populate = (select, options, defaultLabel) => {
-                select.innerHTML = `<option value="all">${defaultLabel}</option>`;
-                [...new Set(options)].sort().forEach(o => select.innerHTML += `<option value="${o}">${o}</option>`);
-            };
-            populate(elements.campaignFilter, allData.map(d => d.campaignName), 'Todas as Campanhas');
-            populate(elements.adSetFilter, allData.map(d => d.adSetName), 'Todos os Conjuntos');
-            populate(elements.audienceFilter, allData.map(d => d.audienceType), 'Todos os Públicos');
-        }
-
-        function updateDashboard() {
-            if (allData.length === 0) return;
-            const filters = { c: elements.campaignFilter.value, a: elements.adSetFilter.value, u: elements.audienceFilter.value };
-            const filteredData = allData.filter(d => (filters.c === 'all' || d.campaignName === filters.c) && (filters.a === 'all' || d.adSetName === filters.a) && (filters.u === 'all' || d.audienceType === filters.u));
-            const goals = { roas: parseFloat(elements.roasGoal.value) || 0, cpa: parseFloat(elements.cpaGoal.value) || 0 };
-            displayManagerContext(goals);
-            displayMetrics(filteredData, goals);
-            displayHighlights(filteredData);
-            generateStrategicSummaries(filteredData, goals);
-            displayBudgetPlan();
-        }
-
-        function displayManagerContext(goals) {
-            if (goals.roas > 0 && goals.cpa > 0) {
-                 elements.managerContext.innerHTML = `<strong>Contexto para a Gestão:</strong> Estas metas foram calculadas com base na nossa margem de lucro. Para cada venda, precisamos de um retorno de <strong>${goals.roas.toFixed(2)}x</strong> e um custo máximo de <strong>R$ ${goals.cpa.toFixed(2)}</strong> para garantir a lucratividade.`;
+            if (accessToken) {
+                // Se temos um token, mostramos o carregamento e buscamos os dados
+                showLoading();
+                await fetchData(accessToken);
             } else {
-                elements.managerContext.innerHTML = `Insira as metas de ROAS e CPA para ativar a análise de lucratividade.`;
+                // Se não temos token, mostramos a seção de login
+                showLogin();
             }
-        }
-        
-        function getKpiClass(value, goal, type = 'higherIsBetter') {
-            if (goal <= 0) return ''; const ratio = value / goal;
-            if (type === 'higherIsBetter') { if (ratio >= 1) return 'good'; if (ratio >= 0.8) return 'warning'; return 'bad'; } 
-            else { if (ratio <= 1) return 'good'; if (ratio <= 1.2) return 'warning'; return 'bad'; }
-        }
-
-        const createCard = (containerId, title, value, kpiClass) => {
-            document.getElementById(containerId).innerHTML += `<div class="stat-card"><h3 class="text-gray-400 text-md font-medium mb-2">${title}</h3><p class="text-4xl font-bold ${kpiClass}">${value}</p></div>`;
         };
 
-        function displayMetrics(data, goals) {
-            elements.financialMetrics.innerHTML = '';
-            const uniqueDays = 30; // Fixo, pois pedimos os últimos 30 dias na API
-            const totals = data.reduce((acc, d) => {
-                acc.spent += d.spent; acc.revenue += d.purchaseValue; acc.purchases += d.purchases; return acc;
-            }, { spent: 0, revenue: 0, purchases: 0 });
-            const roas = totals.spent > 0 ? totals.revenue / totals.spent : 0;
-            const cpa = totals.purchases > 0 ? totals.spent / totals.purchases : 0;
-            const avgDailySpend = uniqueDays > 0 ? totals.spent / uniqueDays : 0;
+        // Evento do botão de login
+        loginBtn.addEventListener('click', () => {
+            // O caminho para a função Netlify
+            window.location.href = '/.netlify/functions/api/login';
+        });
 
-            createCard('financialMetrics', 'ROAS', `${roas.toFixed(2)}x`, getKpiClass(roas, goals.roas));
-            createCard('financialMetrics', 'CPA (Custo por Compra)', `R$ ${cpa.toFixed(2)}`, getKpiClass(cpa, goals.cpa, 'lowerIsBetter'));
-            createCard('financialMetrics', 'Receita Total', `R$ ${totals.revenue.toFixed(2)}`, 'good');
-            createCard('financialMetrics', 'Compras', totals.purchases.toString(), '');
-            createCard('financialMetrics', 'Invest. Médio / Dia', `R$ ${avgDailySpend.toFixed(2)}`, 'text-blue-400');
+        // Funções de controle da UI
+        function showLogin() {
+            loginSection.classList.remove('hidden');
+            loadingSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            dashboardContent.classList.add('hidden');
+        }
+
+        function showLoading() {
+            loginSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+            errorSection.classList.add('hidden');
+            dashboardContent.classList.add('hidden');
+        }
+
+        function showError(message) {
+            loginSection.classList.add('hidden');
+            loadingSection.classList.add('hidden');
+            errorSection.classList.remove('hidden');
+            dashboardContent.classList.add('hidden');
+            errorMessageEl.textContent = message;
+            console.error(message);
+        }
+
+        function showDashboard() {
+            loginSection.classList.add('hidden');
+            loadingSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            dashboardContent.classList.remove('hidden');
+        }
+
+        // Função para buscar dados da nossa API
+        async function fetchData(token) {
+            try {
+                const response = await fetch(`/.netlify/functions/api/data?token=${token}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    showError("Nenhum dado de campanha foi encontrado para o período selecionado. Verifique o seu Gerenciador de Anúncios.");
+                    return;
+                }
+
+                showDashboard();
+                processAndDisplayData(data);
+
+                // Adiciona listeners para re-análise quando as metas mudam
+                document.getElementById('roasGoal').addEventListener('change', () => processAndDisplayData(data));
+                document.getElementById('cpaGoal').addEventListener('change', () => processAndDisplayData(data));
+
+            } catch (e) {
+                showError(`Falha ao buscar dados: ${e.message}`);
+            }
+        }
+        
+        // Função principal para processar e exibir os dados
+        function processAndDisplayData(data) {
+            const roasGoal = parseFloat(document.getElementById('roasGoal').value);
+            const cpaGoal = parseFloat(document.getElementById('cpaGoal').value);
+
+            // 1. Calcular Métricas Agregadas
+            const totals = data.reduce((acc, item) => {
+                acc.spend += parseFloat(item.spend || 0);
+                acc.purchases += parseInt(item.actions?.find(a => a.action_type === 'purchase')?.value || 0);
+                acc.revenue += parseFloat(item.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
+                return acc;
+            }, { spend: 0, purchases: 0, revenue: 0 });
+
+            const totalRoas = totals.spend > 0 ? (totals.revenue / totals.spend) : 0;
+            const totalCpa = totals.purchases > 0 ? (totals.spend / totals.purchases) : 0;
+            
+            const uniqueDays = new Set(data.map(item => item.date_start)).size;
+            const avgDailySpend = uniqueDays > 0 ? totals.spend / uniqueDays : 0;
+
+
+            // 2. Exibir Métricas Essenciais
+            displayMainMetrics({
+                totalRoas,
+                totalCpa,
+                revenue: totals.revenue,
+                purchases: totals.purchases,
+                avgDailySpend
+            }, roasGoal, cpaGoal);
+
+            // 3. Exibir Destaques
+            displayHighlights(data);
+
+            // 4. Exibir Painéis Estratégicos
+            displayStrategicPanels(data, roasGoal, cpaGoal);
+        }
+        
+        // Funções auxiliares para renderizar cada seção
+        function displayMainMetrics(metrics, roasGoal, cpaGoal) {
+            const container = document.getElementById('metricsSection');
+            container.innerHTML = ''; // Limpa antes de adicionar
+
+            const createMetricCard = (label, value, isGood, isBad) => {
+                let colorClass = 'text-gray-800';
+                if (isGood) colorClass = 'text-green-600';
+                if (isBad) colorClass = 'text-red-600';
+
+                return `
+                    <div class="cjota-card text-center">
+                        <div class="metric-value ${colorClass}">${value}</div>
+                        <div class="metric-label">${label}</div>
+                    </div>
+                `;
+            };
+            
+            container.innerHTML += createMetricCard(
+                'ROAS Total', 
+                metrics.totalRoas.toFixed(2),
+                metrics.totalRoas >= roasGoal,
+                metrics.totalRoas < roasGoal
+            );
+             container.innerHTML += createMetricCard(
+                'CPA Total', 
+                `R$ ${metrics.totalCpa.toFixed(2)}`,
+                metrics.totalCpa <= cpaGoal,
+                metrics.totalCpa > cpaGoal
+            );
+            container.innerHTML += createMetricCard('Receita Total', `R$ ${metrics.revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            container.innerHTML += createMetricCard('Compras Totais', metrics.purchases);
+            container.innerHTML += createMetricCard('Investimento Médio Diário', `R$ ${metrics.avgDailySpend.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         }
 
         function displayHighlights(data) {
-            const campaignSpendAgg = aggregateData(data, 'campaignName').sort((a, b) => b.spent - a.spent).slice(0, 5);
-            populateHighlightList(elements.topSpendCampaigns, campaignSpendAgg, 'spent');
-            const adSetSalesAgg = aggregateData(data, 'adSetName').sort((a, b) => b.purchases - a.purchases).slice(0, 5);
-            populateHighlightList(elements.topSellingAdSets, adSetSalesAgg, 'purchases');
-            const adSalesAgg = aggregateData(data, 'adName').sort((a, b) => b.purchases - a.purchases).slice(0, 5);
-            populateHighlightList(elements.topSellingAds, adSalesAgg, 'purchases');
+            // Agrupar dados por campanha, conjunto e anúncio
+            const campaignData = aggregateData(data, 'campaign_name');
+            const adsetData = aggregateData(data, 'adset_name');
+            const adData = aggregateData(data, 'ad_name');
+
+            // Top 5 Investimento (Campanha)
+            const topSpend = Object.values(campaignData).sort((a, b) => b.spend - a.spend).slice(0, 5);
+            const topSpendList = document.querySelector('#topSpend ul');
+            topSpendList.innerHTML = topSpend.map(item => `
+                <li class="flex justify-between">
+                    <span>${item.name}</span>
+                    <span class="font-semibold">R$ ${item.spend.toFixed(2)}</span>
+                </li>
+            `).join('');
+            
+            // Top 5 Vendas (Conjunto)
+            const topAdsets = Object.values(adsetData).sort((a, b) => b.purchases - a.purchases).slice(0, 5);
+             const topAdsetsList = document.querySelector('#topAdsets ul');
+             topAdsetsList.innerHTML = topAdsets.map(item => `
+                <li class="flex justify-between">
+                    <span>${item.name}</span>
+                    <span class="font-semibold">${item.purchases} vendas</span>
+                </li>
+            `).join('');
+
+            // Top 5 Vendas (Anúncio)
+            const topAds = Object.values(adData).sort((a, b) => b.purchases - a.purchases).slice(0, 5);
+             const topAdsList = document.querySelector('#topAds ul');
+             topAdsList.innerHTML = topAds.map(item => `
+                <li class="flex justify-between">
+                    <span>${item.name}</span>
+                    <span class="font-semibold">${item.purchases} vendas</span>
+                </li>
+            `).join('');
         }
 
-        function populateHighlightList(container, data, metric) {
-            container.innerHTML = '';
-            if (data.length === 0 || data.every(item => item[metric] === 0)) {
-                 container.innerHTML = '<p class="text-gray-500 text-center text-sm p-4">Nenhum dado relevante encontrado.</p>'; return;
-            }
-            const list = document.createElement('ul'); list.className = 'space-y-2 text-gray-300';
-            data.forEach(item => {
-                const value = metric === 'spent' ? `R$ ${item.spent.toFixed(2)}` : `${item.purchases} ${item.purchases === 1 ? 'venda' : 'vendas'}`;
-                const li = document.createElement('li');
-                li.className = 'bg-gray-900 p-3 rounded-md flex justify-between items-center text-sm hover:bg-gray-700 transition-colors';
-                li.innerHTML = `<span class="truncate pr-2" title="${item.key}">${item.key}</span><span class="font-bold whitespace-nowrap text-white">${value}</span>`;
-                list.appendChild(li);
-            });
-            container.appendChild(list);
-        }
-        
-        function generateStrategicSummaries(data, goals) {
-            const adSetAgg = aggregateData(data, 'adSetName');
-            populateSummary(elements.goodAdSets, elements.badAdSets, adSetAgg, goals, 'set');
-            const adAgg = aggregateData(data, 'adName');
-            populateSummary(elements.goodCreatives, elements.badCreatives, adAgg, goals, 'creative');
-        }
+        function displayStrategicPanels(data, roasGoal, cpaGoal) {
+            const adsetData = Object.values(aggregateData(data, 'adset_name'));
+            const adData = Object.values(aggregateData(data, 'ad_name'));
 
-        function populateSummary(goodList, badList, aggregatedData, goals, type) {
-            goodList.innerHTML = ''; badList.innerHTML = '';
-            const placeholderInitial = `<div class="placeholder-card"><p>Defina as suas metas para ativar o diagnóstico.</p></div>`;
-            if (goals.roas <= 0 || goals.cpa <= 0) {
-                goodList.innerHTML = placeholderInitial; badList.innerHTML = placeholderInitial; return;
-            }
-            const avgCPM = allData.reduce((acc, d) => acc + d.cpm, 0) / allData.length;
-            aggregatedData.forEach(item => {
-                const isGood = (item.roas >= goals.roas) && (item.cpa <= goals.cpa) && item.purchases > 0;
-                const isBad = item.spent > 20 && ((item.roas > 0 && item.roas < goals.roas) || (item.cpa > 0 && item.cpa > goals.cpa));
-
-                if (isGood) {
-                    goodList.innerHTML += `<div class="action-card border-green-500"><h4>${item.key}</h4><p><strong>Diagnóstico:</strong> Excelente! Está a superar as metas de lucro.</p><p class="mt-2"><strong>Ação Sugerida:</strong> ${type === 'set' ? 'Aumentar o orçamento em 15-20% para escalar.' : 'Usar como modelo para novos criativos.'}</p></div>`;
-                } else if (isBad) {
-                    let diagnosis = '', action = '';
-                    if (item.purchases === 0 && item.spent > goals.cpa && goals.cpa > 0) {
-                        diagnosis = 'Gastou mais que o CPA máximo permitido sem gerar uma única venda.'; action = '<strong>Pausar imediatamente.</strong> A causa provável não está no anúncio, mas sim na oferta ou na página de destino.';
-                    } else if (item.ctr < 1.0) {
-                        diagnosis = `O problema principal é o <strong>CTR baixo (${item.ctr.toFixed(2)}%)</strong>. O anúncio não está a conseguir captar a atenção.`; action = 'Testar <strong>novos criativos</strong> (imagens/vídeos com mais apelo) e copy para aumentar a relevância.';
-                    } else if (item.cpm > avgCPM * 1.5) {
-                        diagnosis = `O CTR é bom, mas o <strong>CPM está alto (R$ ${item.cpm.toFixed(2)})</strong>. O custo para alcançar este público está elevado.`; action = 'O público pode estar muito competitivo. Testar a <strong>expansão do público</strong> com interesses relacionados ou públicos semelhantes (Lookalikes).';
-                    } else if (item.frequency > 3.5) {
-                         diagnosis = `O desempenho está a cair e a <strong>frequência está alta (${item.frequency.toFixed(2)})</strong>. As mesmas pessoas estão a ver o anúncio demasiadas vezes.`; action = '<strong>Atualizar os criativos</strong> para combater a fadiga do anúncio.';
+            const toScaleContainer = document.getElementById('toScale');
+            const toOptimizeContainer = document.getElementById('toOptimize');
+            toScaleContainer.innerHTML = '';
+            toOptimizeContainer.innerHTML = '';
+            
+            const allItems = [...adsetData.map(i => ({...i, type: 'Conjunto'})), ...adData.map(i => ({...i, type: 'Anúncio'}))];
+            
+            allItems.forEach(item => {
+                if(item.purchases === 0 && item.spend > (cpaGoal / 2)) {
+                    // Se não tem compras e já gastou metade do CPA, vai para otimizar
+                     toOptimizeContainer.innerHTML += createStrategicCard(item, roasGoal, cpaGoal, 'Sem compras e com gasto relevante.');
+                } else if (item.purchases > 0) {
+                    // Se tem compras, avalia ROAS e CPA
+                    if(item.roas >= roasGoal && item.cpa <= cpaGoal) {
+                        toScaleContainer.innerHTML += createStrategicCard(item, roasGoal, cpaGoal);
                     } else {
-                        diagnosis = 'O CTR e o CPM estão normais, mas a conversão não está a acontecer como esperado.'; action = 'O problema provavelmente está após o clique. Otimizar a <strong>página de destino</strong> (velocidade, oferta, confiança).';
+                        const reason = item.roas < roasGoal ? 'ROAS abaixo da meta' : 'CPA acima da meta';
+                        toOptimizeContainer.innerHTML += createStrategicCard(item, roasGoal, cpaGoal, reason);
                     }
-                    badList.innerHTML += `<div class="action-card border-red-500"><h4>${item.key}</h4><p><strong>Diagnóstico:</strong> ${diagnosis}</p><p class="mt-2"><strong>Ação Sugerida:</strong> ${action}</p></div>`;
                 }
             });
 
-            if (goodList.innerHTML === '') goodList.innerHTML = `<div class="placeholder-card"><p>Nenhum ${type === 'set' ? 'conjunto' : 'criativo'} superou ambas as metas.</p></div>`;
-            if (badList.innerHTML === '') badList.innerHTML = `<div class="placeholder-card"><p>Nenhum ${type === 'set' ? 'conjunto' : 'criativo'} em estado crítico. Bom trabalho!</p></div>`;
+             if(toScaleContainer.innerHTML === '') toScaleContainer.innerHTML = '<p class="text-sm text-gray-500">Nenhum item atingiu os critérios para escalar no momento.</p>';
+             if(toOptimizeContainer.innerHTML === '') toOptimizeContainer.innerHTML = '<p class="text-sm text-gray-500">Nenhum item com baixo desempenho identificado. Bom trabalho!</p>';
+        }
+
+        function createStrategicCard(item, roasGoal, cpaGoal, reason = '') {
+            const roasColor = item.roas >= roasGoal ? 'text-green-600' : 'text-red-600';
+            const cpaColor = item.cpa <= cpaGoal ? 'text-green-600' : 'text-red-600';
+
+            return `
+                <div class="p-3 bg-white rounded-lg shadow-sm border">
+                    <p class="font-bold text-gray-800">${item.name}</p>
+                    <p class="text-xs text-gray-500 mb-2">${item.type}</p>
+                    <div class="flex justify-between text-sm">
+                        <span class="font-medium">ROAS: <strong class="${roasColor}">${item.roas.toFixed(2)}</strong></span>
+                        <span class="font-medium">CPA: <strong class="${cpaColor}">R$ ${item.cpa.toFixed(2)}</strong></span>
+                        <span class="font-medium">Vendas: <strong>${item.purchases}</strong></span>
+                    </div>
+                    ${reason ? `<p class="text-xs mt-2 text-red-700 bg-red-100 p-1 rounded"><strong>Diagnóstico:</strong> ${reason}</p>` : ''}
+                </div>
+            `;
         }
         
+        // Função utilitária para agregar os dados
         function aggregateData(data, key) {
-             const aggregated = data.reduce((acc, row) => {
-                const id = row[key];
-                if (!acc[id]) acc[id] = { key: id, spent: 0, purchaseValue: 0, purchases: 0, impressions: 0, reach: 0, clicks: 0, cpmSum: 0 };
-                acc[id].spent += row.spent; acc[id].purchaseValue += row.purchaseValue; acc[id].purchases += row.purchases;
-                acc[id].impressions += row.impressions; acc[id].reach += row.reach;
-                const rowClicks = (row.ctr / 100) * row.impressions;
-                acc[id].clicks += isNaN(rowClicks) ? 0 : rowClicks;
-                const rowCpmSum = row.cpm * row.impressions;
-                acc[id].cpmSum += isNaN(rowCpmSum) ? 0 : rowCpmSum;
+             return data.reduce((acc, item) => {
+                const name = item[key];
+                if (!acc[name]) {
+                    acc[name] = { name, spend: 0, purchases: 0, revenue: 0, impressions: 0, clicks: 0 };
+                }
+                const purchases = parseInt(item.actions?.find(a => a.action_type === 'purchase')?.value || 0);
+                const revenue = parseFloat(item.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
+
+                acc[name].spend += parseFloat(item.spend || 0);
+                acc[name].purchases += purchases;
+                acc[name].revenue += revenue;
+                acc[name].impressions += parseInt(item.impressions || 0);
+
+                // Calcula o ROAS e CPA para este item
+                acc[name].roas = acc[name].spend > 0 ? (acc[name].revenue / acc[name].spend) : 0;
+                acc[name].cpa = acc[name].purchases > 0 ? (acc[name].spend / acc[name].purchases) : 0;
+
                 return acc;
             }, {});
-            return Object.values(aggregated).map(d => {
-                const cpa = d.purchases > 0 ? d.spent / d.purchases : 0;
-                const cpm = d.impressions > 0 ? d.cpmSum / d.impressions : 0;
-                const ctr = d.impressions > 0 ? (d.clicks / d.impressions) * 100 : 0;
-                const frequency = d.reach > 0 ? d.impressions / d.reach : 0;
-                return {...d, roas: d.roas, cpa, cpm, ctr, frequency}; // ROAS vem direto da API agora
-            });
-        }
-        
-        function displayBudgetPlan() {
-            const totalBudget = parseFloat(elements.dailyBudgetInput.value);
-            if (!totalBudget || totalBudget <= 0 || allData.length === 0) {
-                elements.budgetPlanResults.innerHTML = ''; return;
-            }
-            const goals = { roas: parseFloat(elements.roasGoal.value) || 0, cpa: parseFloat(elements.cpaGoal.value) || 0 };
-            if (goals.roas <= 0 || goals.cpa <= 0) {
-                elements.budgetPlanResults.innerHTML = '<p class="text-center text-amber-400 mt-4">Por favor, defina as metas de ROAS e CPA para gerar um plano.</p>'; return;
-            }
-            const filters = { c: elements.campaignFilter.value, a: elements.adSetFilter.value, u: elements.audienceFilter.value };
-            const filteredData = allData.filter(d => (filters.c === 'all' || d.campaignName === filters.c) && (filters.a === 'all' || d.adSetName === filters.a) && (filters.u === 'all' || d.audienceType === filters.u));
-            const adSetAgg = aggregateData(filteredData, 'adSetName');
-            const budgetAllocation = { scale: 0.6, maintain: 0.3, test: 0.1 };
-            const categories = { scale: [], maintain: [], pause: [] };
-            let totalScore = 0;
-            adSetAgg.forEach(set => {
-                if (set.roas >= goals.roas * 1.2 && set.cpa <= goals.cpa * 0.8) {
-                    set.score = set.roas / set.cpa; totalScore += set.score; categories.scale.push(set);
-                } else if (set.roas < goals.roas * 0.8 || set.cpa > goals.cpa * 1.2) {
-                    categories.pause.push(set);
-                } else {
-                    categories.maintain.push(set);
-                }
-            });
-            let tableHTML = `<div class="overflow-x-auto mt-6"><table class="w-full text-sm text-left text-gray-300"><thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="px-6 py-3">Conjunto de Anúncios</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Orçamento Sugerido</th></tr></thead><tbody>`;
-            if (totalScore > 0) {
-                categories.scale.forEach(set => {
-                    const budget = (set.score / totalScore) * (totalBudget * budgetAllocation.scale);
-                    tableHTML += `<tr><td class="px-6 py-4">${set.key}</td><td class="px-6 py-4"><span class="budget-tag tag-scale">Escalar</span></td><td class="px-6 py-4 font-bold text-green-400">R$ ${budget.toFixed(2)}</td></tr>`;
-                });
-            }
-            if (categories.maintain.length > 0) {
-                const maintainBudget = (totalBudget * budgetAllocation.maintain) / categories.maintain.length;
-                 categories.maintain.forEach(set => {
-                    tableHTML += `<tr><td class="px-6 py-4">${set.key}</td><td class="px-6 py-4"><span class="budget-tag tag-maintain">Manter</span></td><td class="px-6 py-4 font-bold text-amber-400">R$ ${maintainBudget.toFixed(2)}</td></tr>`;
-                });
-            }
-            categories.pause.forEach(set => {
-                tableHTML += `<tr><td class="px-6 py-4">${set.key}</td><td class="px-6 py-4"><span class="budget-tag tag-pause">Pausar/Otimizar</span></td><td class="px-6 py-4 font-bold text-red-400">R$ 0.00</td></tr>`;
-            });
-            const testBudget = totalBudget * budgetAllocation.test;
-            tableHTML += `<tr><td class="px-6 py-4"><strong>Novos Testes</strong></td><td></td><td class="px-6 py-4 font-bold text-blue-400">R$ ${testBudget.toFixed(2)}</td></tr>`;
-            tableHTML += `</tbody></table></div>`;
-            elements.budgetPlanResults.innerHTML = tableHTML;
         }
     </script>
 </body>
