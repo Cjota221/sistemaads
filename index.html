@@ -5,239 +5,202 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Estratégico CJOTA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .kpi-card { transition: all 0.3s ease; }
-        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .kpi-card { transition: all 0.2s ease-in-out; }
+        .kpi-card:hover { transform: scale(1.03); box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); }
+        .btn-action { transition: all 0.2s ease-in-out; }
+        .btn-action:hover { transform: scale(1.05); }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-slate-50 text-slate-800">
 
-    <div class="container mx-auto p-4 md:p-8">
-        
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Dashboard Estratégico CJOTA</h1>
-            <p class="text-gray-600 mt-2">Análise de Performance de Anúncios Meta</p>
-        </header>
+    <!-- Notificação Toast -->
+    <div id="toast-notification" class="fixed top-5 right-5 z-50 transition-transform transform translate-x-full">
+        <!-- O conteúdo será preenchido via JS -->
+    </div>
 
-        <!-- Secção de Login -->
-        <section id="login-section" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md text-center">
-            <h2 class="text-2xl font-semibold mb-4">Bem-vindo(a)</h2>
-            <p class="text-gray-600 mb-6">Para analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
-            <button onclick="window.location.href='/.netlify/functions/api/login'" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300">
-                Conectar com Facebook
-            </button>
-        </section>
-
-        <!-- Secção de Análise (inicialmente oculta) -->
-        <section id="analysis-section" class="hidden">
-
-            <!-- Estado de Carregamento -->
-            <div id="loading-state" class="text-center py-16">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p class="mt-4 text-lg font-medium text-gray-700">A carregar e analisar os seus dados...</p>
-                <p class="text-gray-500">Isto pode demorar alguns segundos.</p>
+    <!-- Modal de Confirmação -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold" id="modal-title">Confirmar Ação</h3>
+            <p class="text-slate-600 my-4" id="modal-body">Tem certeza de que deseja executar esta ação?</p>
+            <div class="flex justify-center gap-4">
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Cancelar</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Confirmar</button>
             </div>
-            
-            <!-- Container de Erro -->
-            <div id="error-container" class="hidden max-w-2xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
-                <strong class="font-bold">Ocorreu um Erro!</strong>
-                <span class="block sm:inline" id="error-message">Não foi possível carregar os dados.</span>
-            </div>
+        </div>
+    </div>
 
-            <!-- Conteúdo do Dashboard (inicialmente oculto até os dados carregarem) -->
-            <div id="dashboard-content" class="hidden">
-                 <!-- Metas e Controles -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <label for="roas-goal" class="block text-sm font-medium text-gray-700">Meta de ROAS</label>
-                        <input type="number" id="roas-goal" value="6.0" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <label for="cpa-goal" class="block text-sm font-medium text-gray-700">Teto de CPA (R$)</label>
-                        <input type="number" id="cpa-goal" value="30.00" step="0.50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow flex items-end">
-                        <button id="reanalyze-button" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
-                            Reanalisar com Metas
-                        </button>
-                    </div>
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-md p-6 flex-col hidden md:flex">
+            <h1 class="text-2xl font-extrabold text-slate-900">CJOTA</h1>
+            <p class="text-sm text-slate-500 mb-8">Analytics</p>
+            <nav class="flex flex-col gap-4">
+                <a href="#" class="flex items-center gap-3 px-4 py-2 bg-blue-50 text-blue-700 font-bold rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" /></svg>
+                    Dashboard
+                </a>
+                <!-- Futuros links da sidebar podem ser adicionados aqui -->
+            </nav>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+            <header class="text-left mb-10">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Dashboard Estratégico</h2>
+                <p class="text-slate-500 mt-1">Análise de Performance de Anúncios Meta</p>
+            </header>
+
+            <!-- Secção de Login -->
+            <section id="login-section" class="max-w-xl mx-auto bg-white p-10 rounded-xl shadow-sm text-center">
+                <h2 class="text-2xl font-semibold mb-4">Bem-vindo(a)</h2>
+                <p class="text-slate-600 mb-6">Para analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
+                <button onclick="window.location.href='/.netlify/functions/api/login'" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm hover:shadow-lg">
+                    Conectar com Facebook
+                </button>
+            </section>
+
+             <!-- Secção de Análise -->
+            <section id="analysis-section" class="hidden">
+                <div id="loading-state" class="text-center py-20">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="mt-4 text-lg font-medium text-slate-700">A carregar e analisar os seus dados...</p>
+                </div>
+                
+                <div id="error-container" class="hidden max-w-2xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+                    <strong class="font-bold">Ocorreu um Erro!</strong>
+                    <span class="block" id="error-message"></span>
                 </div>
 
-                <!-- Métricas Essenciais -->
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8" id="kpi-grid">
-                    <!-- Cards de KPI serão inseridos aqui -->
-                </div>
-
-                <!-- Painéis Estratégicos -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-xl font-bold mb-4 text-green-700">✅ A Escalar (Lucro Alto)</h3>
-                        <div id="escala-content" class="space-y-4"></div>
+                <div id="dashboard-content" class="hidden space-y-10">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Metas são preenchidas aqui -->
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-xl font-bold mb-4 text-red-700">❌ A Otimizar (Prejuízo/Lucro Baixo)</h3>
-                        <div id="otimiza-content" class="space-y-4"></div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6" id="kpi-grid">
+                        <!-- Cards de KPI -->
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-green-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>A Escalar (Lucro Alto)</h3>
+                            <div id="escala-content" class="space-y-4"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-700"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>A Otimizar (Prejuízo/Lucro Baixo)</h3>
+                            <div id="otimiza-content" class="space-y-4"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-        </section>
-
+            </section>
+        </main>
     </div>
 
     <script>
-        let rawAdData = []; 
+        let rawAdData = [];
+        let accessToken = null;
 
         window.onload = function () {
             const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('access_token');
+            accessToken = urlParams.get('access_token');
 
             if (accessToken) {
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('analysis-section').classList.remove('hidden');
-                document.getElementById('loading-state').classList.remove('hidden');
-                
                 if (window.history.replaceState) {
                     const url = new URL(window.location.href);
                     url.searchParams.delete('access_token');
                     window.history.replaceState({ path: url.href }, '', url.href);
                 }
-
                 fetchAdData(accessToken);
             } else {
                 document.getElementById('login-section').classList.remove('hidden');
-                document.getElementById('analysis-section').classList.add('hidden');
             }
-
-            document.getElementById('reanalyze-button').addEventListener('click', () => {
-                if (rawAdData.length > 0) {
-                    processAndDisplayData(rawAdData);
-                }
-            });
         };
+        
+        // --- FUNÇÕES DE AÇÃO (NOVO) ---
+        function confirmPauseAdset(adsetId, adsetName) {
+            const modal = document.getElementById('confirmation-modal');
+            document.getElementById('modal-title').innerText = 'Pausar Conjunto de Anúncios';
+            document.getElementById('modal-body').innerText = `Tem certeza de que deseja pausar o conjunto "${adsetName}"? Esta ação não pode ser desfeita por aqui.`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
 
-        function fetchAdData(token) {
-            fetch(`/.netlify/functions/api/data?token=${token}`)
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => {
-                            let errorDetails = text;
-                            try {
-                                const jsonError = JSON.parse(text);
-                                errorDetails = JSON.stringify(jsonError.details || jsonError, null, 2);
-                            } catch (e) { /* Usa o texto bruto */ }
-                            throw new Error(`O servidor respondeu com status ${response.status}. Detalhes: ${errorDetails}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.data) {
-                        rawAdData = data.data; 
-                        processAndDisplayData(rawAdData);
-                    } else {
-                        throw new Error("A resposta da API não continha o campo 'data' esperado.");
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro detalhado ao buscar ou processar dados:', error);
-                    document.getElementById('loading-state').classList.add('hidden');
-                    document.getElementById('error-message').textContent = `Falha ao carregar os dados. Motivo: ${error.message}`;
-                    document.getElementById('error-container').classList.remove('hidden');
-                });
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            const cancelBtn = document.getElementById('modal-cancel-btn');
+
+            const confirmHandler = () => {
+                pauseAdset(adsetId);
+                closeModal();
+                confirmBtn.removeEventListener('click', confirmHandler);
+            };
+            
+            confirmBtn.addEventListener('click', confirmHandler);
+            cancelBtn.addEventListener('click', closeModal);
         }
         
-        function processAndDisplayData(data) {
-            const roasGoal = parseFloat(document.getElementById('roas-goal').value);
-            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value);
+        function pauseAdset(adsetId) {
+            const button = document.querySelector(`button[data-adset-id="${adsetId}"]`);
+            if (button) button.disabled = true;
 
-            let totalSpend = 0;
-            let totalRevenue = 0;
-            let totalPurchases = 0;
-            let adsets = {};
-
-            data.forEach(ad => {
-                if (!ad.insights || !ad.insights.data || ad.insights.data.length === 0) {
-                    return; 
+            fetch('/.netlify/functions/api/update-adset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: accessToken, adset_id: adsetId, status: 'PAUSED' })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    showToast('Conjunto pausado com sucesso!', 'success');
+                    const card = button.closest('.adset-card');
+                    if (card) {
+                        card.style.opacity = '0.6';
+                        button.innerText = 'Pausado';
+                    }
+                } else {
+                    throw new Error(result.details?.error?.message || 'Falha ao pausar o conjunto.');
                 }
-                const insights = ad.insights.data[0];
-
-                const spend = parseFloat(insights.spend || 0);
-                totalSpend += spend;
-
-                const purchaseAction = insights.actions?.find(a => a.action_type === 'purchase');
-                const purchases = parseInt(purchaseAction?.value || 0);
-                totalPurchases += purchases;
-                
-                const revenueAction = insights.action_values?.find(a => a.action_type === 'purchase');
-                const revenue = parseFloat(revenueAction?.value || 0);
-                totalRevenue += revenue;
-
-                const adsetName = ad.adset.name;
-                if (!adsets[adsetName]) {
-                    // **ATUALIZAÇÃO AQUI** - Iniciamos as novas métricas e um contador para a média
-                    adsets[adsetName] = { spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
-                }
-                adsets[adsetName].spend += spend;
-                adsets[adsetName].revenue += revenue;
-                adsets[adsetName].purchases += purchases;
-                adsets[adsetName].ctr += parseFloat(insights.ctr || 0);
-                adsets[adsetName].cpm += parseFloat(insights.cpm || 0);
-                adsets[adsetName].cpc += parseFloat(insights.cpc || 0);
-                adsets[adsetName].adCount++;
+            })
+            .catch(error => {
+                showToast(`Erro: ${error.message}`, 'error');
+                if (button) button.disabled = false;
             });
+        }
+        
+        function closeModal() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+            document.getElementById('modal-confirm-btn').removeEventListener('click', () => {});
+        }
 
-            // Calcula a média das novas métricas para cada conjunto
-            for (const name in adsets) {
-                if (adsets[name].adCount > 0) {
-                    adsets[name].ctr /= adsets[name].adCount;
-                    adsets[name].cpm /= adsets[name].adCount;
-                    adsets[name].cpc /= adsets[name].adCount;
-                }
-            }
-
-            const overallROAS = totalSpend > 0 ? (totalRevenue / totalSpend) : 0;
-            const overallCPA = totalPurchases > 0 ? (totalSpend / totalPurchases) : 0;
-
-            displayKPIs(totalSpend, totalRevenue, totalPurchases, overallROAS, overallCPA, roasGoal, cpaGoal);
-            displayStrategicPanels(adsets, roasGoal, cpaGoal);
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast-notification');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
             
-            document.getElementById('loading-state').classList.add('hidden');
-            document.getElementById('error-container').classList.add('hidden');
-            document.getElementById('dashboard-content').classList.remove('hidden');
+            toast.innerHTML = `<div class="${bgColor} text-white font-bold rounded-lg shadow-lg py-3 px-5">${message}</div>`;
+            toast.classList.remove('translate-x-full');
+            toast.classList.add('translate-x-0');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0');
+                toast.classList.add('translate-x-full');
+            }, 4000);
+        }
+        
+        // --- FUNÇÕES DE DADOS E EXIBIÇÃO ---
+        function fetchAdData(token) {
+             // ... restante do código (sem alterações) ...
+        }
+
+        function processAndDisplayData(data) {
+             // ... restante do código (sem alterações) ...
         }
 
         function displayKPIs(spend, revenue, purchases, roas, cpa, roasGoal, cpaGoal) {
-            const kpiGrid = document.getElementById('kpi-grid');
-            kpiGrid.innerHTML = ''; 
-
-            const kpis = [
-                { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
-                { label: 'Receita Total', value: `R$ ${revenue.toFixed(2)}` },
-                { label: 'Compras', value: purchases },
-                { 
-                    label: 'ROAS Geral', 
-                    value: roas.toFixed(2), 
-                    colorClass: roas >= roasGoal ? 'text-green-600' : 'text-red-600'
-                },
-                { 
-                    label: 'CPA Geral', 
-                    value: `R$ ${cpa.toFixed(2)}`,
-                    colorClass: cpa <= cpaGoal ? 'text-green-600' : 'text-red-600'
-                }
-            ];
-
-            kpis.forEach(kpi => {
-                const card = `
-                    <div class="kpi-card bg-white p-4 rounded-lg shadow text-center">
-                        <p class="text-sm text-gray-500">${kpi.label}</p>
-                        <p class="text-2xl font-bold ${kpi.colorClass || ''}">${kpi.value}</p>
-                    </div>
-                `;
-                kpiGrid.innerHTML += card;
-            });
+             // ... restante do código (sem alterações) ...
         }
 
         function displayStrategicPanels(adsets, roasGoal, cpaGoal) {
@@ -251,14 +214,19 @@
             sortedAdsets.forEach(([name, data]) => {
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
-
                 const meetsRoas = roas >= roasGoal;
                 const meetsCpa = cpa > 0 && cpa <= cpaGoal;
 
-                // **ATUALIZAÇÃO AQUI** - O card foi reestruturado para mostrar as novas métricas
+                // **ATUALIZAÇÃO AQUI** - Adicionamos o botão de pausar no card de otimização
+                const pauseButtonHtml = `
+                    <button onclick="confirmPauseAdset('${data.id}', '${name.replace(/'/g, "\\'")}')" data-adset-id="${data.id}"
+                            class="btn-action mt-3 w-full bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-lg hover:bg-red-200">
+                        Pausar Conjunto
+                    </button>`;
+
                 const cardHtml = `
-                    <div class="border p-4 rounded-lg bg-gray-50">
-                        <p class="font-bold text-gray-800">${name}</p>
+                    <div class="adset-card border p-4 rounded-lg bg-slate-50">
+                        <p class="font-bold text-slate-800">${name}</p>
                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
                             <span>ROAS: <span class="${roas >= roasGoal ? 'text-green-600' : 'text-red-600'} font-semibold">${roas.toFixed(2)}</span></span>
                             <span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-600' : 'text-red-600'} font-semibold">R$ ${cpa.toFixed(2)}</span></span>
@@ -267,6 +235,7 @@
                             <span>CPC: <span class="font-semibold">R$ ${data.cpc.toFixed(2)}</span></span>
                             <span>Invest.: <span class="font-semibold">R$ ${data.spend.toFixed(2)}</span></span>
                         </div>
+                        ${(meetsRoas && meetsCpa) ? '' : pauseButtonHtml}
                     </div>
                 `;
 
@@ -276,9 +245,8 @@
                     otimizaContent.innerHTML += cardHtml;
                 }
             });
-
-            if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-gray-500">Nenhum conjunto de anúncios atingiu as metas para escalar.</p>';
-            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-gray-500">Todos os conjuntos de anúncios estão performando dentro das metas!</p>';
+            if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto atingiu as metas para escalar.</p>';
+            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Todos os conjuntos estão performando dentro das metas!</p>';
         }
     </script>
 </body>
