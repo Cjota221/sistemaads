@@ -88,9 +88,8 @@
     </div>
 
     <script>
-        let rawAdData = []; // Armazena os dados brutos da API para reanálise
+        let rawAdData = []; 
 
-        // --- LÓGICA PRINCIPAL NA INICIALIZAÇÃO ---
         window.onload = function () {
             const urlParams = new URLSearchParams(window.location.search);
             const accessToken = urlParams.get('access_token');
@@ -119,7 +118,6 @@
             });
         };
 
-        // --- BUSCA DE DADOS DA API ---
         function fetchAdData(token) {
             fetch(`/.netlify/functions/api/data?token=${token}`)
                 .then(response => {
@@ -151,7 +149,6 @@
                 });
         }
         
-        // --- PROCESSAMENTO E EXIBIÇÃO DOS DADOS ---
         function processAndDisplayData(data) {
             const roasGoal = parseFloat(document.getElementById('roas-goal').value);
             const cpaGoal = parseFloat(document.getElementById('cpa-goal').value);
@@ -161,9 +158,7 @@
             let totalPurchases = 0;
             let adsets = {};
 
-            // **CORREÇÃO AQUI** - A lógica foi adaptada para o novo formato dos dados
             data.forEach(ad => {
-                // Pula o anúncio se não houver dados de insights para ele
                 if (!ad.insights || !ad.insights.data || ad.insights.data.length === 0) {
                     return; 
                 }
@@ -180,17 +175,29 @@
                 const revenue = parseFloat(revenueAction?.value || 0);
                 totalRevenue += revenue;
 
-                // Usa o nome do conjunto de anúncios do objeto aninhado
                 const adsetName = ad.adset.name;
                 if (!adsets[adsetName]) {
-                    adsets[adsetName] = { spend: 0, revenue: 0, purchases: 0 };
+                    // **ATUALIZAÇÃO AQUI** - Iniciamos as novas métricas e um contador para a média
+                    adsets[adsetName] = { spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
                 }
                 adsets[adsetName].spend += spend;
                 adsets[adsetName].revenue += revenue;
                 adsets[adsetName].purchases += purchases;
+                adsets[adsetName].ctr += parseFloat(insights.ctr || 0);
+                adsets[adsetName].cpm += parseFloat(insights.cpm || 0);
+                adsets[adsetName].cpc += parseFloat(insights.cpc || 0);
+                adsets[adsetName].adCount++;
             });
 
-            // Calcula KPIs
+            // Calcula a média das novas métricas para cada conjunto
+            for (const name in adsets) {
+                if (adsets[name].adCount > 0) {
+                    adsets[name].ctr /= adsets[name].adCount;
+                    adsets[name].cpm /= adsets[name].adCount;
+                    adsets[name].cpc /= adsets[name].adCount;
+                }
+            }
+
             const overallROAS = totalSpend > 0 ? (totalRevenue / totalSpend) : 0;
             const overallCPA = totalPurchases > 0 ? (totalSpend / totalPurchases) : 0;
 
@@ -202,7 +209,6 @@
             document.getElementById('dashboard-content').classList.remove('hidden');
         }
 
-        // --- FUNÇÕES AUXILIARES DE EXIBIÇÃO ---
         function displayKPIs(spend, revenue, purchases, roas, cpa, roasGoal, cpaGoal) {
             const kpiGrid = document.getElementById('kpi-grid');
             kpiGrid.innerHTML = ''; 
@@ -249,12 +255,16 @@
                 const meetsRoas = roas >= roasGoal;
                 const meetsCpa = cpa > 0 && cpa <= cpaGoal;
 
+                // **ATUALIZAÇÃO AQUI** - O card foi reestruturado para mostrar as novas métricas
                 const cardHtml = `
                     <div class="border p-4 rounded-lg bg-gray-50">
                         <p class="font-bold text-gray-800">${name}</p>
-                        <div class="flex justify-between text-sm mt-2">
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
                             <span>ROAS: <span class="${roas >= roasGoal ? 'text-green-600' : 'text-red-600'} font-semibold">${roas.toFixed(2)}</span></span>
                             <span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-600' : 'text-red-600'} font-semibold">R$ ${cpa.toFixed(2)}</span></span>
+                            <span>CTR: <span class="font-semibold">${data.ctr.toFixed(2)}%</span></span>
+                            <span>CPM: <span class="font-semibold">R$ ${data.cpm.toFixed(2)}</span></span>
+                            <span>CPC: <span class="font-semibold">R$ ${data.cpc.toFixed(2)}</span></span>
                             <span>Invest.: <span class="font-semibold">R$ ${data.spend.toFixed(2)}</span></span>
                         </div>
                     </div>
