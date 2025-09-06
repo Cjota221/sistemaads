@@ -63,10 +63,9 @@ router.get('/data', async (req, res) => {
     const adDataResponse = await axios.get(`https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`, {
       params: {
         access_token: token,
-        // **CORREÇÃO AQUI**
-        // Os campos foram reestruturados para buscar as métricas dentro do campo 'insights'
-        // e os nomes das campanhas/conjuntos de seus respectivos objetos.
-        fields: 'name,campaign{name},adset{name},insights{spend,impressions,actions,action_values}',
+        // **ATUALIZAÇÃO AQUI**
+        // Adicionamos as novas métricas: ctr, cpm, cpc.
+        fields: 'name,campaign{name},adset{name},insights{spend,impressions,actions,action_values,ctr,cpm,cpc}',
         date_preset: 'last_30d',
         limit: 1000,
       },
