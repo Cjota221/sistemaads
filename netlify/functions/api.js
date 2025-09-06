@@ -48,19 +48,27 @@ router.get('/callback', async (req, res) => {
 
 // Rota de Dados
 router.get('/data', async (req, res) => {
-  const { token } = req.query;
+  const { token, startDate, endDate } = req.query; // Recebe as datas
   if (!token) return res.status(400).json({ error: 'Token de acesso é necessário.' });
 
   try {
-    const adDataResponse = await axios.get(`https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`, {
-      params: {
+    const params = {
         access_token: token,
-        // **ATUALIZAÇÃO AQUI**: Pedimos o 'effective_status' para saber o status real
         fields: 'name,effective_status,campaign{name,effective_status},adset{id,name,effective_status,daily_budget},insights{spend,impressions,actions,action_values,ctr,cpm,cpc}',
-        date_preset: 'last_30d',
         limit: 1000,
-      },
-    });
+    };
+
+    // **ATUALIZAÇÃO AQUI**: Usa o intervalo de datas se fornecido, senão usa o padrão.
+    if (startDate && endDate) {
+        params.time_range = JSON.stringify({
+            since: startDate,
+            until: endDate,
+        });
+    } else {
+        params.date_preset = 'last_30d';
+    }
+
+    const adDataResponse = await axios.get(`https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads`, { params });
     res.json(adDataResponse.data);
   } catch (error) {
     console.error('Erro ao buscar dados dos anúncios:', error.response ? error.response.data : error.message);
@@ -68,7 +76,7 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// Rota para Atualizar o STATUS de um Conjunto de Anúncios
+// Outras rotas (update-adset-status, update-adset-budget) permanecem as mesmas...
 router.post('/update-adset-status', async (req, res) => {
   const { token, adset_id, status } = req.body;
   if (!token || !adset_id || !status) {
@@ -85,7 +93,6 @@ router.post('/update-adset-status', async (req, res) => {
   }
 });
 
-// Rota para Atualizar o ORÇAMENTO de um Conjunto de Anúncios
 router.post('/update-adset-budget', async (req, res) => {
     const { token, adset_id, daily_budget } = req.body;
     if (!token || !adset_id || !daily_budget) {
@@ -102,6 +109,7 @@ router.post('/update-adset-budget', async (req, res) => {
       res.status(500).json({ success: false, error: 'Erro ao atualizar o orçamento.', details: error.response ? error.response.data : {} });
     }
   });
+
 
 app.use('/.netlify/functions/api', router);
 module.exports.handler = serverless(app);
