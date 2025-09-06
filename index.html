@@ -312,59 +312,91 @@
                 return;
             }
             
-            Object.entries(campaigns).forEach(([campaignName, campaign]) => {
+            const campaignCardsHtml = Object.entries(campaigns).map(([campaignName, campaign]) => {
                 const campaignRoas = campaign.spend > 0 ? (campaign.revenue / campaign.spend) : 0;
-                let adsetsHtml = '';
+                const campaignCpa = campaign.purchases > 0 ? (campaign.spend / campaign.purchases) : 0;
 
-                Object.entries(campaign.adsets).forEach(([adsetName, adset]) => {
+                const adsetsHtml = Object.entries(campaign.adsets).map(([adsetName, adset]) => {
                     const adsetRoas = adset.spend > 0 ? (adset.revenue / adset.spend) : 0;
-                    let adsHtml = '';
+                    const adsetCpa = adset.purchases > 0 ? (adset.spend / adset.purchases) : 0;
                     
-                    adset.ads.forEach(ad => {
+                    const adsHtml = adset.ads.map(ad => {
                         const adRoas = ad.spend > 0 ? (ad.revenue / ad.spend) : 0;
                         const creativeHtml = ad.thumbnail_url 
-                            ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-20 h-20 object-cover rounded-lg">`
-                            : `<div class="thumbnail-placeholder"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
+                            ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
+                            : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
 
-                        adsHtml += `
-                            <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-lg">
+                        return `
+                            <div class="flex items-center gap-4 p-4 bg-white rounded-lg border border-slate-200">
                                 ${creativeHtml}
-                                <div class="flex-1">
-                                    <p class="font-semibold text-slate-800">${ad.name}</p>
-                                </div>
-                                <div class="text-right text-sm space-y-1">
-                                    <p>ROAS: <span class="font-bold">${adRoas.toFixed(2)}</span></p>
-                                    <p>Invest.: <span class="font-semibold">R$ ${ad.spend.toFixed(2)}</span></p>
-                                    <p>CTR: <span class="font-semibold">${ad.ctr.toFixed(2)}%</span></p>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-semibold text-slate-800 truncate" title="${ad.name}">${ad.name}</p>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-600 mt-2">
+                                        <p>Invest.: <span class="font-bold text-slate-800">R$ ${ad.spend.toFixed(2)}</span></p>
+                                        <p>Compras: <span class="font-bold text-slate-800">${ad.purchases}</span></p>
+                                        <p>ROAS: <span class="font-bold text-slate-800">${adRoas.toFixed(2)}</span></p>
+                                        <p>CTR: <span class="font-bold text-slate-800">${ad.ctr.toFixed(2)}%</span></p>
+                                    </div>
                                 </div>
                             </div>`;
-                    });
+                    }).join('');
 
-                    adsetsHtml += `
-                        <div class="ml-4 mt-2">
-                            <button data-accordion-trigger class="w-full flex justify-between items-center p-3 bg-white rounded-lg shadow-sm text-left hover:bg-slate-50">
-                                <span class="font-semibold">${adsetName}</span>
-                                <div class="flex items-center gap-4">
-                                    <span class="font-bold">ROAS: ${adsetRoas.toFixed(2)}</span>
-                                    <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    return `
+                        <div class="bg-slate-100/80 rounded-lg p-1">
+                            <button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-white rounded-lg shadow-sm text-left hover:bg-slate-50">
+                                <div>
+                                    <p class="font-bold text-slate-800">${adsetName}</p>
+                                    <div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mt-1">
+                                        <span>Invest.: <span class="font-semibold text-slate-700">R$ ${adset.spend.toFixed(2)}</span></span>
+                                        <span>ROAS: <span class="font-semibold text-slate-700">${adsetRoas.toFixed(2)}</span></span>
+                                        <span>CPA: <span class="font-semibold text-slate-700">R$ ${adsetCpa.toFixed(2)}</span></span>
+                                    </div>
                                 </div>
+                                <svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
-                            <div data-accordion-content class="pl-4 pt-2 space-y-2">${adsHtml}</div>
+                            <div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div>
                         </div>`;
-                });
+                }).join('');
 
-                container.innerHTML += `
-                    <div class="bg-slate-100 rounded-xl p-4">
-                        <button data-accordion-trigger class="w-full flex justify-between items-center text-left">
-                            <span class="text-lg font-bold">${campaignName}</span>
-                             <div class="flex items-center gap-4">
-                                <span class="text-lg font-extrabold">ROAS Total: ${campaignRoas.toFixed(2)}</span>
-                                <svg class="w-6 h-6 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
+                const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
+
+                return `
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <button data-accordion-trigger class="w-full p-6 text-left bg-white hover:bg-slate-50/50 transition-colors duration-200">
+                            <div class="flex justify-between items-start">
+                                <h3 class="text-xl font-extrabold text-slate-800 pr-4">${campaignName}</h3>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                   <span class="text-sm text-slate-500 hidden sm:inline">Ver detalhes</span>
+                                   <svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="p-2 rounded-lg bg-slate-50/70 text-center">
+                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">Investimento</p>
+                                    <p class="text-lg sm:text-2xl font-bold text-slate-900">R$ ${campaign.spend.toFixed(2)}</p>
+                                </div>
+                                 <div class="p-2 rounded-lg bg-slate-50/70 text-center">
+                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">Receita</p>
+                                    <p class="text-lg sm:text-2xl font-bold text-slate-900">R$ ${campaign.revenue.toFixed(2)}</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-slate-50/70 text-center">
+                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">ROAS</p>
+                                    <p class="text-lg sm:text-2xl font-bold ${campaignRoas >= roasGoal ? 'text-green-600' : 'text-red-600'}">${campaignRoas.toFixed(2)}</p>
+                                </div>
+                                <div class="p-2 rounded-lg bg-slate-50/70 text-center">
+                                    <p class="text-xs sm:text-sm text-slate-500 font-medium">CPA</p>
+                                    <p class="text-lg sm:text-2xl font-bold ${campaignCpa > 0 && campaignCpa <= cpaGoal ? 'text-green-600' : 'text-red-600'}">R$ ${campaignCpa.toFixed(2)}</p>
+                                </div>
                             </div>
                         </button>
-                        <div data-accordion-content class="pt-2">${adsetsHtml}</div>
+                        <div data-accordion-content class="p-4 md:p-6 bg-slate-50 border-t border-slate-200 space-y-4">
+                            ${adsetsHtml}
+                        </div>
                     </div>`;
-            });
+            }).join('');
+            
+            container.innerHTML = campaignCardsHtml;
         }
         
         // --- FUNÇÕES DE PROCESSAMENTO E RENDERIZAÇÃO (DASHBOARD) ---
@@ -577,3 +609,4 @@
     </script>
 </body>
 </html>
+
