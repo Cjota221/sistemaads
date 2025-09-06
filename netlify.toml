@@ -1,16 +1,11 @@
 [build]
+  # Diretório que contém o nosso site para publicar
+  publish = "."
+  # Diretório que contém as nossas funções serverless
   functions = "netlify/functions"
 
 [[redirects]]
+  # Redireciona todos os pedidos que começam com /api/ para a nossa função 'api'
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
-
-# **NOVA CONFIGURAÇÃO ABAIXO**
-[functions]
-  # Aumenta o tempo limite para a nossa função específica
-  # O nome deve corresponder ao nome do ficheiro (sem .js)
-  [functions."api"]
-    # Define o tempo limite em segundos (o máximo pode variar dependendo do plano Netlify)
-    timeout = 25
-
