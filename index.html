@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,428 +7,270 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-        }
-        .cjota-card {
-            background-color: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-        }
-        .cjota-card:hover {
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-        }
-        .cjota-btn {
-            background-color: #1877f2;
-            color: white;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-            cursor: pointer;
-        }
-        .cjota-btn:hover {
-            background-color: #166fe5;
-        }
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-        .metric-label {
-            color: #606770;
-            font-size: 0.9rem;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #1877f2;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .kpi-card { transition: all 0.3s ease; }
+        .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
     </style>
 </head>
-<body class="p-4 sm:p-8">
-    <div class="max-w-7xl mx-auto space-y-8">
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
         
-        <header class="text-center">
-            <h1 class="text-4xl font-bold text-gray-800">Dashboard Estratégico CJOTA</h1>
-            <p class="text-lg text-gray-500 mt-2">Análise de Performance de Anúncios Meta</p>
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Dashboard Estratégico CJOTA</h1>
+            <p class="text-gray-600 mt-2">Análise de Performance de Anúncios Meta</p>
         </header>
 
-        <!-- Seção de Login -->
-        <div id="loginSection" class="cjota-card text-center">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Conecte-se à sua Conta Meta</h2>
-            <p class="text-gray-600 mb-6">Para analisar os dados, é necessário autorizar o acesso à sua conta de anúncios.</p>
-            <button id="loginBtn" class="cjota-btn inline-flex items-center">
-                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12Z" clip-rule="evenodd" /></svg>
+        <!-- Secção de Login -->
+        <section id="login-section" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+            <h2 class="text-2xl font-semibold mb-4">Bem-vindo(a)</h2>
+            <p class="text-gray-600 mb-6">Para analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
+            <button onclick="window.location.href='/.netlify/functions/api/login'" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300">
                 Conectar com Facebook
             </button>
-        </div>
+        </section>
 
-        <!-- Seção de Carregamento -->
-        <div id="loadingSection" class="hidden cjota-card text-center py-16">
-            <div class="spinner mx-auto mb-6"></div>
-            <h2 class="text-2xl font-semibold text-gray-700">A carregar dados...</h2>
-            <p class="text-gray-600">A conectar com a API do Meta. Isto pode levar alguns segundos.</p>
-        </div>
+        <!-- Secção de Análise (inicialmente oculta) -->
+        <section id="analysis-section" class="hidden">
 
-        <!-- Seção de Erro -->
-        <div id="errorSection" class="hidden cjota-card text-center py-16 bg-red-50 border border-red-200">
-             <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <h2 class="text-2xl font-semibold text-red-700">Ocorreu um Erro</h2>
-            <p id="errorMessage" class="text-red-600 mt-2">Não foi possível carregar os dados. Verifique a consola para mais detalhes.</p>
-            <button onclick="location.href='/'" class="mt-6 cjota-btn bg-red-600 hover:bg-red-700">Tentar Novamente</button>
-        </div>
-        
-        <!-- Conteúdo Principal do Dashboard -->
-        <main id="dashboardContent" class="hidden space-y-8">
-            <!-- Definição de Metas -->
-            <section class="cjota-card grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                <div class="md:col-span-1">
-                    <h2 class="text-xl font-bold text-gray-800">Metas de Negócio</h2>
-                    <p class="text-sm text-gray-500 mt-1">Baseado na margem de lucro real (produtos, taxas, impostos).</p>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:col-span-2">
-                    <div>
-                        <label for="roasGoal" class="block text-sm font-medium text-gray-700">Meta de ROAS</label>
-                        <input type="number" id="roasGoal" value="6.0" step="0.1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                    </div>
-                    <div>
-                        <label for="cpaGoal" class="block text-sm font-medium text-gray-700">Teto de CPA (R$)</label>
-                        <input type="number" id="cpaGoal" value="30.00" step="1.00" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
-                    </div>
-                </div>
-            </section>
+            <!-- Estado de Carregamento -->
+            <div id="loading-state" class="text-center py-16">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-lg font-medium text-gray-700">A carregar e analisar os seus dados...</p>
+                <p class="text-gray-500">Isto pode demorar alguns segundos.</p>
+            </div>
+            
+            <!-- Container de Erro -->
+            <div id="error-container" class="hidden max-w-2xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                <strong class="font-bold">Ocorreu um Erro!</strong>
+                <span class="block sm:inline" id="error-message">Não foi possível carregar os dados.</span>
+            </div>
 
-            <!-- Métricas Essenciais -->
-            <section id="metricsSection" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-                <!-- Os cards de métricas serão inseridos aqui pelo JavaScript -->
-            </section>
-
-             <!-- Destaques Rápidos -->
-            <section class="cjota-card">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Destaques Rápidos</h2>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div id="topSpend">
-                        <h3 class="font-semibold text-gray-700 mb-2">📊 Top 5 Campanhas por Investimento</h3>
-                        <ul class="space-y-2 text-sm"></ul>
+            <!-- Conteúdo do Dashboard (inicialmente oculto até os dados carregarem) -->
+            <div id="dashboard-content" class="hidden">
+                 <!-- Metas e Controles -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <label for="roas-goal" class="block text-sm font-medium text-gray-700">Meta de ROAS</label>
+                        <input type="number" id="roas-goal" value="6.0" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
-                    <div id="topAdsets">
-                         <h3 class="font-semibold text-gray-700 mb-2">💰 Top 5 Conjuntos Geradores de Vendas</h3>
-                        <ul class="space-y-2 text-sm"></ul>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <label for="cpa-goal" class="block text-sm font-medium text-gray-700">Teto de CPA (R$)</label>
+                        <input type="number" id="cpa-goal" value="30.00" step="0.50" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                     </div>
-                    <div id="topAds">
-                         <h3 class="font-semibold text-gray-700 mb-2">🖼️ Top 5 Anúncios Geradores de Vendas</h3>
-                        <ul class="space-y-2 text-sm"></ul>
+                    <div class="bg-white p-6 rounded-lg shadow flex items-end">
+                        <button id="reanalyze-button" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
+                            Reanalisar com Metas
+                        </button>
                     </div>
                 </div>
-            </section>
 
-             <!-- Painéis Estratégicos -->
-            <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="cjota-card bg-green-50 border border-green-200">
-                    <h2 class="text-xl font-bold text-green-800 mb-4">✅ A Escalar (Lucro Alto)</h2>
-                    <p class="text-sm text-green-700 mb-4">Conjuntos e anúncios que superam as metas. Aumentar o investimento aqui pode gerar mais lucro.</p>
-                    <div id="toScale" class="space-y-4"></div>
+                <!-- Métricas Essenciais -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8" id="kpi-grid">
+                    <!-- Cards de KPI serão inseridos aqui -->
                 </div>
-                <div class="cjota-card bg-red-50 border border-red-200">
-                    <h2 class="text-xl font-bold text-red-800 mb-4">❌ A Otimizar (Prejuízo/Lucro Baixo)</h2>
-                     <p class="text-sm text-red-700 mb-4">Conjuntos e anúncios com baixo desempenho. Ações são necessárias para evitar prejuízo.</p>
-                    <div id="toOptimize" class="space-y-4"></div>
+
+                <!-- Painéis Estratégicos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-bold mb-4 text-green-700">✅ A Escalar (Lucro Alto)</h3>
+                        <div id="escala-content" class="space-y-4"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-xl font-bold mb-4 text-red-700">❌ A Otimizar (Prejuízo/Lucro Baixo)</h3>
+                        <div id="otimiza-content" class="space-y-4"></div>
+                    </div>
                 </div>
-            </section>
-        </main>
+            </div>
+
+        </section>
+
     </div>
 
     <script>
-        // Elementos da UI
-        const loginSection = document.getElementById('loginSection');
-        const loadingSection = document.getElementById('loadingSection');
-        const errorSection = document.getElementById('errorSection');
-        const errorMessageEl = document.getElementById('errorMessage');
-        const dashboardContent = document.getElementById('dashboardContent');
-        const loginBtn = document.getElementById('loginBtn');
+        let rawAdData = []; // Armazena os dados brutos da API para reanálise
 
-        // Lógica de inicialização da página
-        window.onload = async () => {
+        // --- LÓGICA PRINCIPAL NA INICIALIZAÇÃO ---
+        window.onload = function () {
             const urlParams = new URLSearchParams(window.location.search);
-            const accessToken = urlParams.get('token');
-            const error = urlParams.get('error');
-
-            // Limpa os parâmetros da URL para uma aparência mais limpa
-            try {
-                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({}, document.title, cleanUrl);
-            } catch (e) {
-                console.warn("Could not clean URL: ", e);
-            }
-
-
-            if (error) {
-                showError(`Erro de autenticação: ${error}`);
-                return;
-            }
+            const accessToken = urlParams.get('access_token');
 
             if (accessToken) {
-                // Se temos um token, mostramos o carregamento e buscamos os dados
-                showLoading();
-                await fetchData(accessToken);
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('analysis-section').classList.remove('hidden');
+                document.getElementById('loading-state').classList.remove('hidden');
+                
+                // Limpa o token da URL para não ficar visível
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('access_token');
+                    window.history.replaceState({ path: url.href }, '', url.href);
+                }
+
+                fetchAdData(accessToken);
             } else {
-                // Se não temos token, mostramos a seção de login
-                showLogin();
+                // Se não houver token, mostra a secção de login
+                document.getElementById('login-section').classList.remove('hidden');
+                document.getElementById('analysis-section').classList.add('hidden');
             }
+
+            document.getElementById('reanalyze-button').addEventListener('click', () => {
+                if (rawAdData.length > 0) {
+                    processAndDisplayData(rawAdData);
+                }
+            });
         };
 
-        // Evento do botão de login
-        loginBtn.addEventListener('click', () => {
-            // O caminho para a função Netlify
-            window.location.href = '/.netlify/functions/api/login';
-        });
-
-        // Funções de controle da UI
-        function showLogin() {
-            loginSection.classList.remove('hidden');
-            loadingSection.classList.add('hidden');
-            errorSection.classList.add('hidden');
-            dashboardContent.classList.add('hidden');
-        }
-
-        function showLoading() {
-            loginSection.classList.add('hidden');
-            loadingSection.classList.remove('hidden');
-            errorSection.classList.add('hidden');
-            dashboardContent.classList.add('hidden');
-        }
-
-        function showError(message) {
-            loginSection.classList.add('hidden');
-            loadingSection.classList.add('hidden');
-            errorSection.classList.remove('hidden');
-            dashboardContent.classList.add('hidden');
-            errorMessageEl.textContent = message;
-            console.error(message);
-        }
-
-        function showDashboard() {
-            loginSection.classList.add('hidden');
-            loadingSection.classList.add('hidden');
-            errorSection.classList.add('hidden');
-            dashboardContent.classList.remove('hidden');
-        }
-
-        // Função para buscar dados da nossa API
-        async function fetchData(token) {
-            try {
-                const response = await fetch(`/.netlify/functions/api/data?token=${token}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                if (data.length === 0) {
-                    showError("Nenhum dado de campanha foi encontrado para o período selecionado. Verifique o seu Gerenciador de Anúncios.");
-                    return;
-                }
-
-                showDashboard();
-                processAndDisplayData(data);
-
-                // Adiciona listeners para re-análise quando as metas mudam
-                document.getElementById('roasGoal').addEventListener('change', () => processAndDisplayData(data));
-                document.getElementById('cpaGoal').addEventListener('change', () => processAndDisplayData(data));
-
-            } catch (e) {
-                showError(`Falha ao buscar dados: ${e.message}`);
-            }
+        // --- BUSCA DE DADOS DA API ---
+        function fetchAdData(token) {
+            fetch(`/.netlify/functions/api/data?token=${token}`)
+                .then(response => {
+                    // **NOVA LÓGICA DE ERRO - MAIS ROBUSTA**
+                    // Se a resposta não for 'ok' (ex: status 400, 500), tratamos como erro
+                    if (!response.ok) {
+                        // Tentamos obter o corpo da resposta como texto para ver o que o servidor enviou
+                        return response.text().then(text => {
+                            let errorDetails = text;
+                            try {
+                                // Tentamos analisar como JSON para um erro estruturado
+                                const jsonError = JSON.parse(text);
+                                errorDetails = JSON.stringify(jsonError.details || jsonError, null, 2);
+                            } catch (e) {
+                                // Se não for JSON, usamos o texto bruto
+                            }
+                            // Lançamos um erro que será capturado pelo .catch()
+                            throw new Error(`O servidor respondeu com status ${response.status}. Detalhes: ${errorDetails}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.data) {
+                        rawAdData = data.data; // Armazena os dados brutos
+                        processAndDisplayData(rawAdData);
+                    } else {
+                        throw new Error("A resposta da API não continha o campo 'data' esperado.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro detalhado ao buscar ou processar dados:', error);
+                    document.getElementById('loading-state').classList.add('hidden');
+                    document.getElementById('error-message').textContent = `Falha ao carregar os dados. Motivo: ${error.message}`;
+                    document.getElementById('error-container').classList.remove('hidden');
+                });
         }
         
-        // Função principal para processar e exibir os dados
+        // --- PROCESSAMENTO E EXIBIÇÃO DOS DADOS ---
         function processAndDisplayData(data) {
-            const roasGoal = parseFloat(document.getElementById('roasGoal').value);
-            const cpaGoal = parseFloat(document.getElementById('cpaGoal').value);
+            const roasGoal = parseFloat(document.getElementById('roas-goal').value);
+            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value);
 
-            // 1. Calcular Métricas Agregadas
-            const totals = data.reduce((acc, item) => {
-                acc.spend += parseFloat(item.spend || 0);
-                acc.purchases += parseInt(item.actions?.find(a => a.action_type === 'purchase')?.value || 0);
-                acc.revenue += parseFloat(item.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
-                return acc;
-            }, { spend: 0, purchases: 0, revenue: 0 });
+            let totalSpend = 0;
+            let totalRevenue = 0;
+            let totalPurchases = 0;
+            let adsets = {};
 
-            const totalRoas = totals.spend > 0 ? (totals.revenue / totals.spend) : 0;
-            const totalCpa = totals.purchases > 0 ? (totals.spend / totals.purchases) : 0;
+            data.forEach(ad => {
+                const spend = parseFloat(ad.spend || 0);
+                totalSpend += spend;
+
+                const purchaseAction = ad.actions?.find(a => a.action_type === 'purchase');
+                const purchases = parseInt(purchaseAction?.value || 0);
+                totalPurchases += purchases;
+                
+                const revenueAction = ad.action_values?.find(a => a.action_type === 'purchase');
+                const revenue = parseFloat(revenueAction?.value || 0);
+                totalRevenue += revenue;
+
+                const adsetName = ad.adset_name;
+                if (!adsets[adsetName]) {
+                    adsets[adsetName] = { spend: 0, revenue: 0, purchases: 0 };
+                }
+                adsets[adsetName].spend += spend;
+                adsets[adsetName].revenue += revenue;
+                adsets[adsetName].purchases += purchases;
+            });
+
+            // Calcula KPIs
+            const overallROAS = totalSpend > 0 ? (totalRevenue / totalSpend) : 0;
+            const overallCPA = totalPurchases > 0 ? (totalSpend / totalPurchases) : 0;
+
+            displayKPIs(totalSpend, totalRevenue, totalPurchases, overallROAS, overallCPA, roasGoal, cpaGoal);
+            displayStrategicPanels(adsets, roasGoal, cpaGoal);
             
-            const uniqueDays = new Set(data.map(item => item.date_start)).size;
-            const avgDailySpend = uniqueDays > 0 ? totals.spend / uniqueDays : 0;
-
-
-            // 2. Exibir Métricas Essenciais
-            displayMainMetrics({
-                totalRoas,
-                totalCpa,
-                revenue: totals.revenue,
-                purchases: totals.purchases,
-                avgDailySpend
-            }, roasGoal, cpaGoal);
-
-            // 3. Exibir Destaques
-            displayHighlights(data);
-
-            // 4. Exibir Painéis Estratégicos
-            displayStrategicPanels(data, roasGoal, cpaGoal);
+            // Exibe o conteúdo do dashboard
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-container').classList.add('hidden');
+            document.getElementById('dashboard-content').classList.remove('hidden');
         }
-        
-        // Funções auxiliares para renderizar cada seção
-        function displayMainMetrics(metrics, roasGoal, cpaGoal) {
-            const container = document.getElementById('metricsSection');
-            container.innerHTML = ''; // Limpa antes de adicionar
 
-            const createMetricCard = (label, value, isGood, isBad) => {
-                let colorClass = 'text-gray-800';
-                if (isGood) colorClass = 'text-green-600';
-                if (isBad) colorClass = 'text-red-600';
+        // --- FUNÇÕES AUXILIARES DE EXIBIÇÃO ---
+        function displayKPIs(spend, revenue, purchases, roas, cpa, roasGoal, cpaGoal) {
+            const kpiGrid = document.getElementById('kpi-grid');
+            kpiGrid.innerHTML = ''; // Limpa antes de adicionar
 
-                return `
-                    <div class="cjota-card text-center">
-                        <div class="metric-value ${colorClass}">${value}</div>
-                        <div class="metric-label">${label}</div>
+            const kpis = [
+                { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
+                { label: 'Receita Total', value: `R$ ${revenue.toFixed(2)}` },
+                { label: 'Compras', value: purchases },
+                { 
+                    label: 'ROAS Geral', 
+                    value: roas.toFixed(2), 
+                    colorClass: roas >= roasGoal ? 'text-green-600' : 'text-red-600'
+                },
+                { 
+                    label: 'CPA Geral', 
+                    value: `R$ ${cpa.toFixed(2)}`,
+                    colorClass: cpa <= cpaGoal ? 'text-green-600' : 'text-red-600'
+                }
+            ];
+
+            kpis.forEach(kpi => {
+                const card = `
+                    <div class="kpi-card bg-white p-4 rounded-lg shadow text-center">
+                        <p class="text-sm text-gray-500">${kpi.label}</p>
+                        <p class="text-2xl font-bold ${kpi.colorClass || ''}">${kpi.value}</p>
                     </div>
                 `;
-            };
-            
-            container.innerHTML += createMetricCard(
-                'ROAS Total', 
-                metrics.totalRoas.toFixed(2),
-                metrics.totalRoas >= roasGoal,
-                metrics.totalRoas < roasGoal
-            );
-             container.innerHTML += createMetricCard(
-                'CPA Total', 
-                `R$ ${metrics.totalCpa.toFixed(2)}`,
-                metrics.totalCpa <= cpaGoal,
-                metrics.totalCpa > cpaGoal
-            );
-            container.innerHTML += createMetricCard('Receita Total', `R$ ${metrics.revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
-            container.innerHTML += createMetricCard('Compras Totais', metrics.purchases);
-            container.innerHTML += createMetricCard('Investimento Médio Diário', `R$ ${metrics.avgDailySpend.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+                kpiGrid.innerHTML += card;
+            });
         }
 
-        function displayHighlights(data) {
-            // Agrupar dados por campanha, conjunto e anúncio
-            const campaignData = aggregateData(data, 'campaign_name');
-            const adsetData = aggregateData(data, 'adset_name');
-            const adData = aggregateData(data, 'ad_name');
+        function displayStrategicPanels(adsets, roasGoal, cpaGoal) {
+            const escalaContent = document.getElementById('escala-content');
+            const otimizaContent = document.getElementById('otimiza-content');
+            escalaContent.innerHTML = '';
+            otimizaContent.innerHTML = '';
 
-            // Top 5 Investimento (Campanha)
-            const topSpend = Object.values(campaignData).sort((a, b) => b.spend - a.spend).slice(0, 5);
-            const topSpendList = document.querySelector('#topSpend ul');
-            topSpendList.innerHTML = topSpend.map(item => `
-                <li class="flex justify-between">
-                    <span>${item.name}</span>
-                    <span class="font-semibold">R$ ${item.spend.toFixed(2)}</span>
-                </li>
-            `).join('');
-            
-            // Top 5 Vendas (Conjunto)
-            const topAdsets = Object.values(adsetData).sort((a, b) => b.purchases - a.purchases).slice(0, 5);
-             const topAdsetsList = document.querySelector('#topAdsets ul');
-             topAdsetsList.innerHTML = topAdsets.map(item => `
-                <li class="flex justify-between">
-                    <span>${item.name}</span>
-                    <span class="font-semibold">${item.purchases} vendas</span>
-                </li>
-            `).join('');
+            const sortedAdsets = Object.entries(adsets).sort(([,a], [,b]) => b.spend - a.spend);
 
-            // Top 5 Vendas (Anúncio)
-            const topAds = Object.values(adData).sort((a, b) => b.purchases - a.purchases).slice(0, 5);
-             const topAdsList = document.querySelector('#topAds ul');
-             topAdsList.innerHTML = topAds.map(item => `
-                <li class="flex justify-between">
-                    <span>${item.name}</span>
-                    <span class="font-semibold">${item.purchases} vendas</span>
-                </li>
-            `).join('');
-        }
+            sortedAdsets.forEach(([name, data]) => {
+                const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
+                const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
 
-        function displayStrategicPanels(data, roasGoal, cpaGoal) {
-            const adsetData = Object.values(aggregateData(data, 'adset_name'));
-            const adData = Object.values(aggregateData(data, 'ad_name'));
+                const meetsRoas = roas >= roasGoal;
+                const meetsCpa = cpa > 0 && cpa <= cpaGoal; // CPA só é bom se for maior que zero e abaixo da meta
 
-            const toScaleContainer = document.getElementById('toScale');
-            const toOptimizeContainer = document.getElementById('toOptimize');
-            toScaleContainer.innerHTML = '';
-            toOptimizeContainer.innerHTML = '';
-            
-            const allItems = [...adsetData.map(i => ({...i, type: 'Conjunto'})), ...adData.map(i => ({...i, type: 'Anúncio'}))];
-            
-            allItems.forEach(item => {
-                if(item.purchases === 0 && item.spend > (cpaGoal / 2)) {
-                    // Se não tem compras e já gastou metade do CPA, vai para otimizar
-                     toOptimizeContainer.innerHTML += createStrategicCard(item, roasGoal, cpaGoal, 'Sem compras e com gasto relevante.');
-                } else if (item.purchases > 0) {
-                    // Se tem compras, avalia ROAS e CPA
-                    if(item.roas >= roasGoal && item.cpa <= cpaGoal) {
-                        toScaleContainer.innerHTML += createStrategicCard(item, roasGoal, cpaGoal);
-                    } else {
-                        const reason = item.roas < roasGoal ? 'ROAS abaixo da meta' : 'CPA acima da meta';
-                        toOptimizeContainer.innerHTML += createStrategicCard(item, roasGoal, cpaGoal, reason);
-                    }
+                const cardHtml = `
+                    <div class="border p-4 rounded-lg bg-gray-50">
+                        <p class="font-bold text-gray-800">${name}</p>
+                        <div class="flex justify-between text-sm mt-2">
+                            <span>ROAS: <span class="${roas >= roasGoal ? 'text-green-600' : 'text-red-600'} font-semibold">${roas.toFixed(2)}</span></span>
+                            <span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-600' : 'text-red-600'} font-semibold">R$ ${cpa.toFixed(2)}</span></span>
+                            <span>Invest.: <span class="font-semibold">R$ ${data.spend.toFixed(2)}</span></span>
+                        </div>
+                    </div>
+                `;
+
+                if (meetsRoas && meetsCpa) {
+                    escalaContent.innerHTML += cardHtml;
+                } else {
+                    otimizaContent.innerHTML += cardHtml;
                 }
             });
 
-             if(toScaleContainer.innerHTML === '') toScaleContainer.innerHTML = '<p class="text-sm text-gray-500">Nenhum item atingiu os critérios para escalar no momento.</p>';
-             if(toOptimizeContainer.innerHTML === '') toOptimizeContainer.innerHTML = '<p class="text-sm text-gray-500">Nenhum item com baixo desempenho identificado. Bom trabalho!</p>';
-        }
-
-        function createStrategicCard(item, roasGoal, cpaGoal, reason = '') {
-            const roasColor = item.roas >= roasGoal ? 'text-green-600' : 'text-red-600';
-            const cpaColor = item.cpa <= cpaGoal ? 'text-green-600' : 'text-red-600';
-
-            return `
-                <div class="p-3 bg-white rounded-lg shadow-sm border">
-                    <p class="font-bold text-gray-800">${item.name}</p>
-                    <p class="text-xs text-gray-500 mb-2">${item.type}</p>
-                    <div class="flex justify-between text-sm">
-                        <span class="font-medium">ROAS: <strong class="${roasColor}">${item.roas.toFixed(2)}</strong></span>
-                        <span class="font-medium">CPA: <strong class="${cpaColor}">R$ ${item.cpa.toFixed(2)}</strong></span>
-                        <span class="font-medium">Vendas: <strong>${item.purchases}</strong></span>
-                    </div>
-                    ${reason ? `<p class="text-xs mt-2 text-red-700 bg-red-100 p-1 rounded"><strong>Diagnóstico:</strong> ${reason}</p>` : ''}
-                </div>
-            `;
-        }
-        
-        // Função utilitária para agregar os dados
-        function aggregateData(data, key) {
-             return data.reduce((acc, item) => {
-                const name = item[key];
-                if (!acc[name]) {
-                    acc[name] = { name, spend: 0, purchases: 0, revenue: 0, impressions: 0, clicks: 0 };
-                }
-                const purchases = parseInt(item.actions?.find(a => a.action_type === 'purchase')?.value || 0);
-                const revenue = parseFloat(item.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
-
-                acc[name].spend += parseFloat(item.spend || 0);
-                acc[name].purchases += purchases;
-                acc[name].revenue += revenue;
-                acc[name].impressions += parseInt(item.impressions || 0);
-
-                // Calcula o ROAS e CPA para este item
-                acc[name].roas = acc[name].spend > 0 ? (acc[name].revenue / acc[name].spend) : 0;
-                acc[name].cpa = acc[name].purchases > 0 ? (acc[name].spend / acc[name].purchases) : 0;
-
-                return acc;
-            }, {});
+            if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-gray-500">Nenhum conjunto de anúncios atingiu as metas para escalar.</p>';
+            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-gray-500">Todos os conjuntos de anúncios estão performando dentro das metas!</p>';
         }
     </script>
 </body>
