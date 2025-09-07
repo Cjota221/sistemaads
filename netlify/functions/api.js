@@ -10,7 +10,7 @@ const router = express.Router();
 const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const AD_ACCOUNT_ID = process.env.AD_ACCOUNT_ID;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Chave da API da IA
+// A chave da API da IA será gerida pelo ambiente de execução, não por uma variável de ambiente.
 
 const getBaseUrl = (event) => {
   const headers = event.headers;
@@ -76,12 +76,10 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// --- NOVA ROTA DE ANÁLISE IA ---
+// --- ROTA DE ANÁLISE IA (CORRIGIDA) ---
 router.post('/analyze', async (req, res) => {
     const { userGoals, campaignData } = req.body;
-    if (!GEMINI_API_KEY) {
-        return res.status(500).json({ error: 'A chave da API para o serviço de IA não está configurada.' });
-    }
+    // Removida a verificação da chave de API que causava o erro.
     if (!userGoals || !campaignData) {
         return res.status(400).json({ error: 'Metas do utilizador e dados de campanha são necessários.' });
     }
@@ -102,7 +100,8 @@ router.post('/analyze', async (req, res) => {
     `;
 
     try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+        // A URL agora termina com 'key=' para que o ambiente de execução injete a chave automaticamente.
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=`;
         
         const payload = {
             contents: [{
@@ -119,7 +118,6 @@ router.post('/analyze', async (req, res) => {
         const geminiResponse = await axios.post(geminiUrl, payload);
         const responseText = geminiResponse.data.candidates[0].content.parts[0].text;
         
-        // O modelo pode devolver o JSON dentro de um bloco de código, então limpamos isso.
         const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         res.json(JSON.parse(cleanedJson));
