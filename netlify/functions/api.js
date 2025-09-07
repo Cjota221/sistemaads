@@ -83,12 +83,10 @@ router.get('/data', async (req, res) => {
   });
 
   try {
-    // **CORREÇÃO PRINCIPAL**: O `time_range` foi movido para dentro do campo `fields`
-    // e aplicado diretamente ao `insights`. Esta é a forma correta de pedir ao Facebook
-    // os dados de um período específico. O parâmetro `&time_range=` no final foi removido.
     const fields = `name,campaign{name,effective_status},adset{name,effective_status,daily_budget},ad_creative{thumbnail_url},insights.time_range(${time_range}){spend,impressions,ctr,cpm,cpc,actions,action_values}`;
     
-    const initialUrl = `https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads?access_token=${token}&fields=${fields}&limit=100`;
+    // **CORREÇÃO PRINCIPAL**: Aumentamos o limite de 100 para 500 para reduzir o número de chamadas à API.
+    const initialUrl = `https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads?access_token=${token}&fields=${fields}&limit=500`;
     
     const allAdData = await fetchAllPages(initialUrl);
     res.json({ data: allAdData });
