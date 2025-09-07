@@ -84,10 +84,9 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" /></svg>
                     Campanhas
                 </a>
-                <!-- NOVO BOTÃO DE NAVEGAÇÃO -->
                 <a href="#analysis" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
-                    Análise IA
+                    Análise Inteligente
                 </a>
             </nav>
         </aside>
@@ -120,11 +119,11 @@
                                 <input type="date" id="end-date" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
                              <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
-                                <label for="roas-goal" class="block text-sm font-medium text-slate-400">Meta de ROAS</label>
+                                <label for="roas-goal" class="block text-sm font-medium text-slate-400">Meta de ROAS (Vendas)</label>
                                 <input type="number" id="roas-goal" value="6.0" step="0.1" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
                             <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
-                                <label for="cpa-goal" class="block text-sm font-medium text-slate-400">Teto de CPA (R$)</label>
+                                <label for="cpa-goal" class="block text-sm font-medium text-slate-400">Teto de CPA (Vendas)</label>
                                 <input type="number" id="cpa-goal" value="30.00" step="0.50" class="mt-1 block w-full rounded-md shadow-sm text-sm dark-input">
                             </div>
                         </div>
@@ -151,11 +150,11 @@
                     <div id="campaigns-content" class="space-y-6"></div>
                 </div>
 
-                <!-- NOVA VIEW DE ANÁLISE IA -->
+                <!-- VIEW DE ANÁLISE -->
                 <div id="analysis-view" class="hidden">
                     <header class="text-left mb-10">
-                        <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Análise e Recomendações da IA</h2>
-                        <p class="text-slate-400 mt-1">Ações sugeridas por CJ-AI para otimizar os seus resultados.</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Análise e Recomendações</h2>
+                        <p class="text-slate-400 mt-1">Ações sugeridas pelo sistema para otimizar os seus resultados.</p>
                     </header>
                     <div class="text-center mb-8">
                         <button id="generate-analysis-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
@@ -164,7 +163,7 @@
                     </div>
                     <div id="analysis-loading-state" class="hidden text-center py-10">
                         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-400 mx-auto"></div>
-                        <p class="mt-4 text-lg font-medium text-slate-400">CJ-AI está a analisar os seus dados...</p>
+                        <p class="mt-4 text-lg font-medium text-slate-400">O sistema está a analisar os seus dados...</p>
                         <p class="text-sm text-slate-500">Isto pode levar alguns segundos.</p>
                     </div>
                     <div id="analysis-content" class="space-y-5">
@@ -187,7 +186,7 @@
 
     <script>
         let rawAdData = [];
-        let structuredCampaignData = []; // Para guardar os dados formatados para a IA
+        let structuredCampaigns = [];
         let accessToken = null;
 
         window.onload = function () {
@@ -230,7 +229,7 @@
             const reprocessVisuals = () => {
                 if(rawAdData.length > 0) {
                     processAndDisplayDashboard(rawAdData);
-                    processAndDisplayCampaigns(rawAdData);
+                    renderCampaignsView(structuredCampaigns);
                 }
             };
 
@@ -280,13 +279,10 @@
                     if (!data.data) throw new Error("A resposta da API não continha o campo 'data' esperado.");
                     
                     rawAdData = data.data;
+                    structuredCampaigns = structureCampaignData(rawAdData);
                     
                     processAndDisplayDashboard(rawAdData);
-                    // Processa e guarda os dados estruturados para a IA
-                    structuredCampaignData = structureDataForAI(rawAdData);
-                    // Usa os dados estruturados para renderizar a view de campanhas
-                    renderCampaignsView(structuredCampaignData);
-
+                    renderCampaignsView(structuredCampaigns);
 
                     document.getElementById('loading-state').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
@@ -337,65 +333,134 @@
             });
         }
         
-        function structureDataForAI(data) {
+        function getObjectiveInfo(objective) {
+            const objectives = {
+                'OUTCOME_SALES': { label: 'VENDAS', color: 'bg-green-500/20 text-green-300' },
+                'OUTCOME_LEADS': { label: 'LEADS', color: 'bg-blue-500/20 text-blue-300' },
+                'OUTCOME_MESSAGES': { label: 'MENSAGENS', color: 'bg-cyan-500/20 text-cyan-300' },
+                'OUTCOME_TRAFFIC': { label: 'TRÁFEGO', color: 'bg-purple-500/20 text-purple-300' },
+                'OUTCOME_AWARENESS': { label: 'ALCANCE', color: 'bg-yellow-500/20 text-yellow-300' },
+                'OUTCOME_ENGAGEMENT': { label: 'ENGAJAMENTO', color: 'bg-pink-500/20 text-pink-300' }
+            };
+            return objectives[objective] || { label: objective, color: 'bg-slate-600 text-slate-300' };
+        }
+
+        function structureCampaignData(data) {
             const campaigns = {};
             data.forEach(ad => {
                 if (!ad.campaign || !ad.insights?.data?.[0]) return;
-
                 const insights = ad.insights.data[0];
-                const spend = parseFloat(insights.spend || 0);
-                const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
-                const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
-                const roas = spend > 0 ? (revenue / spend) : 0;
-                const cpa = purchases > 0 ? (spend / purchases) : 0;
-
                 const campaignName = ad.campaign.name;
+                
                 if (!campaigns[campaignName]) {
-                    campaigns[campaignName] = { name: campaignName, spend: 0, purchases: 0, revenue: 0, roas: 0, cpa: 0, adsets: {} };
+                    campaigns[campaignName] = { 
+                        name: campaignName,
+                        objective: ad.campaign.objective,
+                        spend: 0, purchases: 0, revenue: 0, conversations: 0, clicks: 0, adsets: {} 
+                    };
                 }
 
                 const adsetName = ad.adset.name;
                 if (!campaigns[campaignName].adsets[adsetName]) {
-                    campaigns[campaignName].adsets[adsetName] = { name: adsetName, spend: 0, purchases: 0, revenue: 0, roas: 0, cpa: 0, ads: [] };
+                    campaigns[campaignName].adsets[adsetName] = { 
+                        name: adsetName, spend: 0, purchases: 0, revenue: 0, conversations: 0, clicks: 0, ads: [] 
+                    };
                 }
                 
+                const spend = parseFloat(insights.spend || 0);
+                const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
+                const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
+                const conversations = parseInt(insights.actions?.find(a => a.action_type.includes('messaging_conversation'))?.value || 0);
+                const clicks = parseInt(insights.clicks || 0);
+
                 const adData = {
                     name: ad.name,
-                    spend,
-                    purchases,
-                    revenue,
-                    roas,
-                    cpa,
+                    spend, purchases, revenue, conversations, clicks,
+                    roas: spend > 0 ? (revenue / spend) : 0,
+                    cpa: purchases > 0 ? (spend / purchases) : 0,
+                    costPerConv: conversations > 0 ? (spend / conversations) : 0,
                     ctr: parseFloat(insights.ctr || 0),
                     cpm: parseFloat(insights.cpm || 0),
                     cpc: parseFloat(insights.cpc || 0),
                     thumbnail_url: ad.ad_creative?.thumbnail_url
                 };
-
                 campaigns[campaignName].adsets[adsetName].ads.push(adData);
             });
             
-            // Agrega os valores para conjuntos e campanhas
             Object.values(campaigns).forEach(campaign => {
                 Object.values(campaign.adsets).forEach(adset => {
                     adset.ads.forEach(ad => {
                         adset.spend += ad.spend;
                         adset.purchases += ad.purchases;
                         adset.revenue += ad.revenue;
+                        adset.conversations += ad.conversations;
+                        adset.clicks += ad.clicks;
                     });
-                    adset.roas = adset.spend > 0 ? (adset.revenue / adset.spend) : 0;
-                    adset.cpa = adset.purchases > 0 ? (adset.spend / adset.purchases) : 0;
-
                     campaign.spend += adset.spend;
                     campaign.purchases += adset.purchases;
                     campaign.revenue += adset.revenue;
+                    campaign.conversations += adset.conversations;
+                    campaign.clicks += adset.clicks;
                 });
-                campaign.roas = campaign.spend > 0 ? (campaign.revenue / campaign.spend) : 0;
-                campaign.cpa = campaign.purchases > 0 ? (campaign.spend / campaign.purchases) : 0;
             });
 
             return Object.values(campaigns);
         }
+        
+        function getCampaignKPIsHTML(campaign) {
+            const roasGoal = parseFloat(document.getElementById('roas-goal').value);
+            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value);
+            const objective = campaign.objective;
+
+            const spend = campaign.spend;
+            const revenue = campaign.revenue;
+            const purchases = campaign.purchases;
+            const conversations = campaign.conversations;
+            const clicks = campaign.clicks;
+
+            const roas = spend > 0 ? (revenue / spend) : 0;
+            const cpa = purchases > 0 ? (spend / purchases) : 0;
+            const costPerConv = conversations > 0 ? (spend / conversations) : 0;
+            const cpc = clicks > 0 ? (spend / clicks) : 0;
+            
+            let kpis = [];
+
+            if (objective === 'OUTCOME_SALES' || objective === 'OUTCOME_LEADS') {
+                kpis = [
+                    { label: 'Investimento', value: `R$ ${spend.toFixed(2)}` },
+                    { label: 'Receita', value: `R$ ${revenue.toFixed(2)}` },
+                    { label: 'ROAS', value: roas.toFixed(2), isGood: roas >= roasGoal },
+                    { label: 'CPA', value: `R$ ${cpa.toFixed(2)}`, isGood: cpa > 0 && cpa <= cpaGoal }
+                ];
+            } else if (objective === 'OUTCOME_MESSAGES') {
+                 kpis = [
+                    { label: 'Investimento', value: `R$ ${spend.toFixed(2)}` },
+                    { label: 'Conversas', value: conversations },
+                    { label: 'Custo/Conversa', value: `R$ ${costPerConv.toFixed(2)}`, isGood: costPerConv < 10 }, // Ex: meta de < R$10
+                    { label: 'Cliques', value: clicks }
+                ];
+            } else if (objective === 'OUTCOME_TRAFFIC') {
+                 kpis = [
+                    { label: 'Investimento', value: `R$ ${spend.toFixed(2)}` },
+                    { label: 'Cliques', value: clicks },
+                    { label: 'CPC', value: `R$ ${cpc.toFixed(2)}`, isGood: cpc < 1.50 }, // Ex: meta de < R$1.50
+                    { label: 'CPM', value: `R$ ${((spend / (clicks / (parseFloat(campaign.ads?.[0]?.ctr || 1) / 100))) * 1000).toFixed(2) || '0.00'}` }
+                ];
+            } else {
+                 kpis = [
+                    { label: 'Investimento', value: `R$ ${spend.toFixed(2)}` },
+                    { label: 'Cliques', value: clicks },
+                    { label: 'Impressões', value: Math.round((clicks / (parseFloat(campaign.ads?.[0]?.ctr || 1) / 100))) || 0 },
+                    { label: 'CPM', value: `R$ ${((spend / (clicks / (parseFloat(campaign.ads?.[0]?.ctr || 1) / 100))) * 1000).toFixed(2) || '0.00'}` }
+                ];
+            }
+            
+            return kpis.map(kpi => {
+                 const colorClass = kpi.hasOwnProperty('isGood') ? (kpi.isGood ? 'text-green-400' : 'text-red-400') : 'text-slate-100';
+                 return `<div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">${kpi.label}</p><p class="text-lg sm:text-2xl font-bold ${colorClass}">${kpi.value}</p></div>`;
+            }).join('');
+        }
+
 
         function renderCampaignsView(campaignsData) {
             const container = document.getElementById('campaigns-content');
@@ -404,25 +469,26 @@
                 container.innerHTML = '<p class="text-slate-500 text-center py-10">Nenhuma campanha encontrada no período selecionado.</p>';
                 return;
             }
-            const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
-            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
 
             const campaignCardsHtml = campaignsData.map(campaign => {
+                const objectiveInfo = getObjectiveInfo(campaign.objective);
+                const kpisHtml = getCampaignKPIsHTML(campaign);
+
                 const adsetsHtml = Object.values(campaign.adsets).map(adset => {
                     const adsHtml = adset.ads.map(ad => {
                         const creativeHtml = ad.thumbnail_url 
                             ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
                             : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
-                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">R$ ${ad.spend.toFixed(2)}</span></p><p>Compras: <span class="font-bold text-slate-200">${ad.purchases}</span></p><p>ROAS: <span class="font-bold text-slate-200">${ad.roas.toFixed(2)}</span></p><p>CTR: <span class="font-bold text-slate-200">${ad.ctr.toFixed(2)}%</span></p></div></div></div>`;
+                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">R$ ${ad.spend.toFixed(2)}</span></p><p>${campaign.objective === 'OUTCOME_MESSAGES' ? 'Conversas' : 'Compras'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_MESSAGES' ? ad.conversations : ad.purchases}</span></p><p>${campaign.objective === 'OUTCOME_SALES' ? 'ROAS' : 'CTR'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_SALES' ? ad.roas.toFixed(2) : ad.ctr.toFixed(2)+'%'}</span></p><p>CPC: <span class="font-bold text-slate-200">R$ ${ad.cpc.toFixed(2)}</span></p></div></div></div>`;
                     }).join('');
-                    return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adset.name}</p><div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-1"><span>Invest.: <span class="font-semibold text-slate-300">R$ ${adset.spend.toFixed(2)}</span></span><span>ROAS: <span class="font-semibold text-slate-300">${adset.roas.toFixed(2)}</span></span><span>CPA: <span class="font-semibold text-slate-300">R$ ${adset.cpa.toFixed(2)}</span></span></div></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
+                    return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adset.name}</p></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
                 }).join('');
-                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaign.name}</h3><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Investimento</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.spend.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Receita</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.revenue.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">ROAS</p><p class="text-lg sm:text-2xl font-bold ${campaign.roas >= roasGoal ? 'text-green-400' : 'text-red-400'}">${campaign.roas.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">CPA</p><p class="text-lg sm:text-2xl font-bold ${campaign.cpa > 0 && campaign.cpa <= cpaGoal ? 'text-green-400' : 'text-red-400'}">R$ ${campaign.cpa.toFixed(2)}</p></div></div></button><div data-accordion-content class="bg-slate-800/50 border-t border-slate-700"><div class="inner-scroll-container p-4 md:p-6 space-y-4">${adsetsHtml}</div></div></div>`;
+                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><div class="flex-1"><div class="flex items-center gap-3 mb-2"><span class="text-xs font-bold px-3 py-1 rounded-full ${objectiveInfo.color}">${objectiveInfo.label}</span></div><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaign.name}</h3></div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">${kpisHtml}</div></button><div data-accordion-content class="bg-slate-800/50 border-t border-slate-700"><div class="inner-scroll-container p-4 md:p-6 space-y-4">${adsetsHtml}</div></div></div>`;
             }).join('');
             container.innerHTML = campaignCardsHtml;
         }
 
-        // --- LÓGICA DA ANÁLISE IA ---
+        // --- LÓGICA DA ANÁLISE ---
         
         async function triggerAnalysis() {
             if (rawAdData.length === 0) {
@@ -444,12 +510,33 @@
             };
 
             try {
+                // Prepara os dados agregados dos conjuntos para enviar para análise
+                const adsetsDataForAnalysis = [];
+                structuredCampaigns.forEach(campaign => {
+                    Object.values(campaign.adsets).forEach(adset => {
+                         adsetsDataForAnalysis.push({
+                            name: adset.name,
+                            campaign_name: campaign.name,
+                            objective: campaign.objective,
+                            spend: adset.spend,
+                            purchases: adset.purchases,
+                            revenue: adset.revenue,
+                            conversations: adset.conversations,
+                            clicks: adset.clicks,
+                            roas: adset.spend > 0 ? adset.revenue / adset.spend : 0,
+                            cpa: adset.purchases > 0 ? adset.spend / adset.purchases : 0,
+                            costPerConv: adset.conversations > 0 ? adset.spend / adset.conversations : 0,
+                            cpc: adset.clicks > 0 ? adset.spend / adset.clicks : 0
+                        });
+                    });
+                });
+
                 const response = await fetch('/.netlify/functions/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userGoals: userGoals,
-                        campaignData: structuredCampaignData
+                        adsetsData: adsetsDataForAnalysis
                     }),
                 });
 
@@ -463,7 +550,7 @@
 
             } catch (error) {
                 showToast(`Erro ao gerar análise: ${error.message}`, 'error');
-                content.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao comunicar com a IA. Tente novamente.</p>`;
+                content.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao comunicar com o sistema de análise. Tente novamente.</p>`;
             } finally {
                 loading.classList.add('hidden');
                 btn.disabled = false;
@@ -473,7 +560,7 @@
         function renderAnalysisCards(analysisData) {
             const container = document.getElementById('analysis-content');
             if (!analysisData || analysisData.length === 0) {
-                container.innerHTML = `<p class="text-slate-400 text-center">CJ-AI não encontrou recomendações específicas para o período selecionado.</p>`;
+                container.innerHTML = `<p class="text-slate-400 text-center">O sistema não encontrou recomendações específicas para o período selecionado.</p>`;
                 return;
             }
             
@@ -514,7 +601,7 @@
                 if (!ad.insights?.data?.[0] || !ad.adset) return;
                 const insights = ad.insights.data[0];
                 const adsetName = ad.adset.name;
-                if (!adsets[adsetName]) adsets[adsetName] = { id: ad.adset.id, status: ad.adset.effective_status, budget: (parseFloat(ad.adset.daily_budget) / 100) || 0, spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
+                if (!adsets[adsetName]) adsets[adsetName] = { id: ad.adset.id, objective: ad.campaign.objective, status: ad.adset.effective_status, budget: (parseFloat(ad.adset.daily_budget) / 100) || 0, spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
                 const spend = parseFloat(insights.spend || 0);
                 totalSpend += spend;
                 adsets[adsetName].spend += spend;
@@ -547,10 +634,10 @@
             kpiGrid.innerHTML = ''; 
             const kpis = [
                 { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
-                { label: 'Receita Total', value: `R$ ${revenue.toFixed(2)}` },
+                { label: 'Receita (Vendas)', value: `R$ ${revenue.toFixed(2)}` },
                 { label: 'Compras', value: purchases },
-                { label: 'ROAS Geral', value: roas.toFixed(2), isGood: roas >= roasGoal },
-                { label: 'CPA Geral', value: `R$ ${cpa.toFixed(2)}`, isGood: cpa > 0 && cpa <= cpaGoal }
+                { label: 'ROAS (Vendas)', value: roas.toFixed(2), isGood: roas >= roasGoal },
+                { label: 'CPA (Vendas)', value: `R$ ${cpa.toFixed(2)}`, isGood: cpa > 0 && cpa <= cpaGoal }
             ];
             kpis.forEach(kpi => {
                 const colorClass = kpi.hasOwnProperty('isGood') ? (kpi.isGood ? 'text-green-400' : 'text-red-400') : 'text-slate-100';
@@ -562,7 +649,9 @@
             const escalaContent = document.getElementById('escala-content');
             const otimizaContent = document.getElementById('otimiza-content');
             escalaContent.innerHTML = otimizaContent.innerHTML = '';
-            const sortedAdsets = Object.entries(adsets).sort(([,a], [,b]) => b.spend - a.spend);
+            const sortedAdsets = Object.entries(adsets).filter(([,data]) => data.objective === 'OUTCOME_SALES' || data.objective === 'OUTCOME_LEADS')
+                                     .sort(([,a], [,b]) => b.spend - a.spend);
+
             sortedAdsets.forEach(([name, data]) => {
                 if(data.spend === 0) return;
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
@@ -570,15 +659,16 @@
                 const meetsRoas = roas >= roasGoal;
                 const meetsCpa = cpa > 0 && cpa <= cpaGoal;
                 const isActive = data.status === 'ACTIVE';
+                const objectiveInfo = getObjectiveInfo(data.objective);
                 const statusBtnClass = isActive ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30' : 'bg-green-500/20 text-green-300 hover:bg-green-500/30';
                 const statusBtnText = isActive ? 'Pausar' : 'Ativar';
                 const newStatus = isActive ? 'PAUSED' : 'ACTIVE';
-                const cardHtml = `<div class="adset-card border p-4 rounded-lg bg-slate-700/50 border-slate-600"><div class="flex justify-between items-start"><p class="font-bold text-slate-200 pr-2">${name}</p><span class="text-xs font-semibold px-2 py-1 rounded-full ${isActive ? 'bg-green-500/20 text-green-300' : 'bg-slate-600 text-slate-300'}">${data.status}</span></div><div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3 text-slate-400"><span>ROAS: <span class="${roas >= roasGoal ? 'text-green-400' : 'text-red-400'} font-semibold">${roas.toFixed(2)}</span></span><span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-400' : 'text-red-400'} font-semibold">R$ ${cpa.toFixed(2)}</span></span><span>CTR: <span class="font-semibold text-slate-200">${data.ctr.toFixed(2)}%</span></span><span>CPM: <span class="font-semibold text-slate-200">R$ ${data.cpm.toFixed(2)}</span></span><span>CPC: <span class="font-semibold text-slate-200">R$ ${data.cpc.toFixed(2)}</span></span><span>Invest.: <span class="font-semibold text-slate-200">R$ ${data.spend.toFixed(2)}</span></span></div><div class="mt-4 pt-4 border-t border-slate-600 flex justify-between items-center gap-4"><div class="flex items-center gap-2"><label for="budget-${data.id}" class="text-sm font-medium text-slate-400">Orçamento:</label><input type="number" id="budget-${data.id}" value="${data.budget.toFixed(2)}" step="1" class="budget-input p-1 rounded-md shadow-sm text-sm dark-input"><button onclick="updateBudget('${data.id}')" class="text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 font-bold p-2 rounded-md">Salvar</button></div><button onclick="confirmStatusChange('${data.id}', '${name.replace(/'/g, "\\'")}', '${newStatus}')" class="btn-action font-semibold py-2 px-3 rounded-lg text-sm ${statusBtnClass}">${statusBtnText}</button></div></div>`;
+                const cardHtml = `<div class="adset-card border p-4 rounded-lg bg-slate-700/50 border-slate-600"><div class="flex justify-between items-start"><div class="flex-1 pr-2"><div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold px-2 py-0.5 rounded-full ${objectiveInfo.color}">${objectiveInfo.label}</span></div><p class="font-bold text-slate-200">${name}</p></div><span class="text-xs font-semibold px-2 py-1 rounded-full ${isActive ? 'bg-green-500/20 text-green-300' : 'bg-slate-600 text-slate-300'} flex-shrink-0">${data.status}</span></div><div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3 text-slate-400"><span>ROAS: <span class="${roas >= roasGoal ? 'text-green-400' : 'text-red-400'} font-semibold">${roas.toFixed(2)}</span></span><span>CPA: <span class="${cpa > 0 && cpa <= cpaGoal ? 'text-green-400' : 'text-red-400'} font-semibold">R$ ${cpa.toFixed(2)}</span></span><span>CTR: <span class="font-semibold text-slate-200">${data.ctr.toFixed(2)}%</span></span><span>CPM: <span class="font-semibold text-slate-200">R$ ${data.cpm.toFixed(2)}</span></span><span>CPC: <span class="font-semibold text-slate-200">R$ ${data.cpc.toFixed(2)}</span></span><span>Invest.: <span class="font-semibold text-slate-200">R$ ${data.spend.toFixed(2)}</span></span></div><div class="mt-4 pt-4 border-t border-slate-600 flex justify-between items-center gap-4"><div class="flex items-center gap-2"><label for="budget-${data.id}" class="text-sm font-medium text-slate-400">Orçamento:</label><input type="number" id="budget-${data.id}" value="${data.budget.toFixed(2)}" step="1" class="budget-input p-1 rounded-md shadow-sm text-sm dark-input"><button onclick="updateBudget('${data.id}')" class="text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 font-bold p-2 rounded-md">Salvar</button></div><button onclick="confirmStatusChange('${data.id}', '${name.replace(/'/g, "\\'")}', '${newStatus}')" class="btn-action font-semibold py-2 px-3 rounded-lg text-sm ${statusBtnClass}">${statusBtnText}</button></div></div>`;
                 if (meetsRoas && meetsCpa) escalaContent.innerHTML += cardHtml;
                 else otimizaContent.innerHTML += cardHtml;
             });
-            if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto atingiu as metas para escalar no período.</p>';
-            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto a otimizar encontrado no período.</p>';
+            if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads atingiu as metas para escalar.</p>';
+            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads a otimizar encontrado.</p>';
         }
         
         function confirmStatusChange(adsetId, adsetName, newStatus) {
