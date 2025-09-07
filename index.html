@@ -488,12 +488,13 @@
             const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
             const lucroMeta = parseFloat(document.getElementById('lucro-liquido-par-meta').value) || 0;
             
-            const qtdVendida = precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : (overallMetrics.totalPurchases || 0);
+            // Usar compras do FB se disponível, senão calcular com base no preço médio.
+            const qtdVendida = (overallMetrics.totalPurchases > 0) ? overallMetrics.totalPurchases : (precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : 0);
 
-            const custoFixoUnitReal = qtdVendida > 0 ? custosFixosMes / qtdVendida : custosFixosMes;
+            const custoFixoUnitReal = qtdVendida > 0 ? custosFixosMes / qtdVendida : 0;
             const custoTotalProdutoReal = custoDireto + custoVariavel + custoFixoUnitReal;
             
-            const ticketMedio = (overallMetrics.totalPurchases || 0) > 0 ? (overallMetrics.totalRevenue || 0) / overallMetrics.totalPurchases : precoMedioAssumido;
+            const ticketMedio = qtdVendida > 0 ? (overallMetrics.totalRevenue || 0) / qtdVendida : precoMedioAssumido;
             
             let roasMinimo = 0;
             if (ticketMedio > 0) {
@@ -560,7 +561,7 @@
             const investimentoMedioDiario = spend / diffDays;
             
             const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 0;
-            const ticketMedio = purchases > 0 ? revenue / purchases : precoMedioAssumido;
+            const ticketMedio = qtdVendida > 0 ? revenue / qtdVendida : precoMedioAssumido;
             
             const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
             const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
