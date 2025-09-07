@@ -126,26 +126,31 @@
                             </div>
                         </div>
 
-                        <!-- SEÇÃO DE CUSTOS ATUALIZADA -->
+                        <!-- SEÇÃO DE CUSTOS CORRIGIDA -->
                         <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700" id="cost-config-section">
                           <h3 class="text-lg font-bold text-slate-100 mb-4">⚙️ Configuração de Custos do Negócio</h3>
-                          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div>
                               <label class="block text-sm font-medium text-slate-400">Custo Fixo Unitário</label>
                               <input type="number" id="custo-fixo-unitario" value="8.88" step="0.01" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 8.88">
-                              <p class="text-xs text-slate-500 mt-1">Custo de produção + logística</p>
+                              <p class="text-xs text-slate-500 mt-1">Custo de produção do par</p>
                             </div>
                             <div>
                               <label class="block text-sm font-medium text-slate-400">Custo Variável Unitário</label>
                               <input type="number" id="custo-variavel-unitario" value="2.40" step="0.01" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 2.40">
-                              <p class="text-xs text-slate-500 mt-1">Comissões, taxas, etc.</p>
+                              <p class="text-xs text-slate-500 mt-1">Embalagem, saquinho, etc.</p>
                             </div>
                             <div>
-                              <label class="block text-sm font-medium text-slate-400">Custo Operacional Unitário</label>
-                              <input type="number" id="custo-operacional-unitario" value="50.00" step="0.50" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 50.00">
-                              <p class="text-xs text-slate-500 mt-1">(Custos Op. / Meta Vendas)</p>
+                              <label class="block text-sm font-medium text-slate-400">Custos Operacionais/Mês</label>
+                              <input type="number" id="custos-operacionais-mes" value="13330.00" step="100" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 13330.00">
+                              <p class="text-xs text-slate-500 mt-1">Salários, aluguel, etc.</p>
                             </div>
                             <div>
+                              <label class="block text-sm font-medium text-slate-400">Meta Vendas/Mês (Pares)</label>
+                              <input type="number" id="meta-vendas-mes" value="1500" step="10" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 1500">
+                              <p class="text-xs text-slate-500 mt-1">Unidades a serem vendidas</p>
+                            </div>
+                             <div>
                               <label class="block text-sm font-medium text-slate-400">Lucro Médio por Par (Meta)</label>
                               <input type="number" id="lucro-medio-par-meta" value="7.00" step="0.50" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 7.00">
                               <p class="text-xs text-slate-500 mt-1">Lucro desejado por venda</p>
@@ -396,18 +401,14 @@
             const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
             const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
             
-            overallMetrics = { totalSpend: 0, totalRevenue: 0, totalPurchases: 0, totalClicks: 0, totalImpressions: 0, totalReach: 0 };
+            overallMetrics = { totalSpend: 0, totalRevenue: 0, totalPurchases: 0 };
 
             data.forEach(ad => {
                 if (!ad.insights?.data?.[0]) return;
                 const insights = ad.insights.data[0];
-                
                 overallMetrics.totalSpend += parseFloat(insights.spend || 0);
                 overallMetrics.totalRevenue += parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
                 overallMetrics.totalPurchases += parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
-                overallMetrics.totalClicks += parseInt(insights.clicks || 0);
-                overallMetrics.totalImpressions += parseInt(insights.impressions || 0);
-                overallMetrics.totalReach += parseInt(insights.reach || 0);
             });
             
             const costConfig = updateCostCalculationsUI();
@@ -471,26 +472,31 @@
         function updateCostCalculationsUI() {
             const custoFixo = parseFloat(document.getElementById('custo-fixo-unitario').value) || 0;
             const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
-            const custoOperacionalUnitario = parseFloat(document.getElementById('custo-operacional-unitario').value) || 0;
+            const custosOperacionais = parseFloat(document.getElementById('custos-operacionais-mes').value) || 0;
+            const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
             const lucroMeta = parseFloat(document.getElementById('lucro-medio-par-meta').value) || 0;
-            
+
+            const custoOperacionalUnitario = custosOperacionais / metaVendas;
             const custoTotalProduto = custoFixo + custoVariavel + custoOperacionalUnitario;
+            
             const avgPrice = overallMetrics.totalPurchases > 0 ? overallMetrics.totalRevenue / overallMetrics.totalPurchases : 0;
             
             let roasMinimo = 0;
-            if (avgPrice > custoTotalProduto) {
+            if (avgPrice > 0 && avgPrice > custoTotalProduto) {
                 roasMinimo = avgPrice / (avgPrice - custoTotalProduto);
             }
 
             let roasIdeal = 0;
-            const cpaIdeal = avgPrice - custoTotalProduto - lucroMeta;
-            if (cpaIdeal > 0) {
-                roasIdeal = avgPrice / cpaIdeal;
+            if (avgPrice > 0) {
+                const cpaIdealParaLucro = avgPrice - custoTotalProduto - lucroMeta;
+                if (cpaIdealParaLucro > 0) {
+                    roasIdeal = avgPrice / cpaIdealParaLucro;
+                }
             }
 
-            document.getElementById('custo-total-produto').textContent = `R$ ${custoTotalProduto.toFixed(2)}`;
-            document.getElementById('roas-minimo-empate').textContent = roasMinimo.toFixed(1);
-            document.getElementById('roas-ideal').textContent = roasIdeal.toFixed(1);
+            document.getElementById('custo-total-produto').textContent = `R$ ${(custoTotalProduto || 0).toFixed(2)}`;
+            document.getElementById('roas-minimo-empate').textContent = (roasMinimo || 0).toFixed(1);
+            document.getElementById('roas-ideal').textContent = (roasIdeal || 0).toFixed(1);
 
             return { custoTotalProduto, roasMinimo, roasIdeal };
         }
@@ -534,15 +540,15 @@
             const cpaReal = purchases > 0 ? (spend + custoTotalProdutos) / purchases : 0;
 
             const kpis = [
-              { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
-              { label: 'Receita Bruta', value: `R$ ${revenue.toFixed(2)}` },
-              { label: 'ROAS Facebook', value: roas.toFixed(2), color: getPerformanceColor(roas, roasGoal) },
-              { label: 'Custo Total Produtos', value: `R$ ${custoTotalProdutos.toFixed(2)}`, subtitle: `${purchases} × R$ ${custoTotalProduto.toFixed(2)}` },
-              { label: 'Lucro Líquido Real', value: `R$ ${lucroLiquido.toFixed(2)}`, color: getPerformanceColor(lucroLiquido, 1) },
-              { label: '🎯 ROAS REAL', value: roasReal.toFixed(2), isGood: roasReal >= roasIdeal, isCritical: true },
-              { label: 'Margem Líquida', value: `${margemLiquida.toFixed(1)}%`, color: getPerformanceColor(margemLiquida, 30) },
-              { label: 'Compras', value: purchases },
-              { label: 'CPA Real', value: `R$ ${cpaReal.toFixed(2)}` }
+              { label: 'Investimento Total', value: `R$ ${(spend || 0).toFixed(2)}` },
+              { label: 'Receita Bruta', value: `R$ ${(revenue || 0).toFixed(2)}` },
+              { label: 'ROAS Facebook', value: (roas || 0).toFixed(2), color: getPerformanceColor(roas, roasGoal) },
+              { label: 'Custo Total Produtos', value: `R$ ${(custoTotalProdutos || 0).toFixed(2)}`, subtitle: `${purchases} × R$ ${custoTotalProduto.toFixed(2)}` },
+              { label: 'Lucro Líquido Real', value: `R$ ${(lucroLiquido || 0).toFixed(2)}`, color: getPerformanceColor(lucroLiquido, 1) },
+              { label: '🎯 ROAS REAL', value: (roasReal || 0).toFixed(2), isGood: roasReal >= roasIdeal, isCritical: true },
+              { label: 'Margem Líquida', value: `${(margemLiquida || 0).toFixed(1)}%`, color: getPerformanceColor(margemLiquida, 30) },
+              { label: 'Compras', value: purchases || 0 },
+              { label: 'CPA Real', value: `R$ ${(cpaReal || 0).toFixed(2)}` }
             ];
 
             kpiGrid.innerHTML = kpis.map(kpi => {
@@ -750,16 +756,16 @@
                     <div class="adset-card border border-slate-700 p-4 rounded-lg bg-slate-800/50">
                         <p class="font-bold text-slate-200 truncate pr-2" title="${data.name}">${data.name}</p>
                         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3">
-                            <span class="text-slate-400">ROAS Facebook: <span class="${getPerformanceColor(data.roas, roasGoal)} font-semibold">${data.roas.toFixed(2)}</span></span>
-                            <span class="text-slate-400">CPA Facebook: <span class="${getPerformanceColor(data.cpa, cpaGoal, false)} font-semibold">R$ ${data.cpa.toFixed(2)}</span></span>
+                            <span class="text-slate-400">ROAS Facebook: <span class="${getPerformanceColor(data.roas, roasGoal)} font-semibold">${(data.roas || 0).toFixed(2)}</span></span>
+                            <span class="text-slate-400">CPA Facebook: <span class="${getPerformanceColor(data.cpa, cpaGoal, false)} font-semibold">R$ ${(data.cpa || 0).toFixed(2)}</span></span>
                             <span class="text-slate-400">Invest.: <span class="font-semibold text-slate-200">R$ ${data.spend.toFixed(2)}</span></span>
                             <span class="text-slate-400">Compras: <span class="font-semibold text-slate-200">${data.purchases}</span></span>
                         </div>
                         <div class="mt-3 pt-3 border-t border-slate-700">
                             <h5 class="text-sm font-bold text-slate-300 mb-2">📊 Análise de Rentabilidade Real</h5>
                             <div class="grid grid-cols-3 gap-2 text-xs text-center">
-                                <div><p class="text-slate-400">ROAS Real</p><p class="${statusClass} font-bold">${roasReal.toFixed(2)}</p></div>
-                                <div><p class="text-slate-400">Lucro Real</p><p class="${lucroReal >= 0 ? 'text-green-400' : 'text-red-400'} font-bold">R$ ${lucroReal.toFixed(2)}</p></div>
+                                <div><p class="text-slate-400">ROAS Real</p><p class="${statusClass} font-bold">${(roasReal || 0).toFixed(2)}</p></div>
+                                <div><p class="text-slate-400">Lucro Real</p><p class="${lucroReal >= 0 ? 'text-green-400' : 'text-red-400'} font-bold">R$ ${(lucroReal || 0).toFixed(2)}</p></div>
                                 <div><p class="text-slate-400">Status</p><p class="${statusClass} font-bold">${statusText}</p></div>
                             </div>
                         </div>
