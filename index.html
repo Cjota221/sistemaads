@@ -82,6 +82,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" /></svg>
                     Campanhas
                 </a>
+                <a href="#creatives" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                    Análise de Criativos
+                </a>
                 <a href="#analysis" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
                     Análise Inteligente
@@ -247,6 +251,24 @@
                     <div id="campaigns-content" class="space-y-6"></div>
                 </div>
 
+                <!-- NOVA VIEW: ANÁLISE DE CRIATIVOS -->
+                <div id="creatives-view" class="hidden">
+                    <header class="text-left mb-10">
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Análise de Criativos</h2>
+                        <p class="text-slate-400 mt-1">Identifique os criativos vencedores e perdedores com base no lucro real.</p>
+                    </header>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
+                            <h3 class="text-xl font-bold mb-4 text-green-400">🏆 Top Criativos (por Lucro Real)</h3>
+                            <div id="top-creatives-content" class="space-y-4"></div>
+                        </div>
+                        <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
+                            <h3 class="text-xl font-bold mb-4 text-red-400">💀 Piores Criativos (Pausar/Otimizar)</h3>
+                            <div id="worst-creatives-content" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="analysis-view" class="hidden">
                     <header class="text-left mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Análise e Recomendações</h2>
@@ -314,7 +336,7 @@
         async function fetchAllData(token) {
             const loadingState = document.getElementById('loading-state');
             loadingState.classList.remove('hidden');
-            ['dashboard-content', 'campaigns-view', 'analysis-view', 'error-container'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['dashboard-content', 'campaigns-view', 'analysis-view', 'creatives-view', 'error-container'].forEach(id => document.getElementById(id).classList.add('hidden'));
 
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
@@ -360,6 +382,7 @@
         function processAndDisplayAll(mainRaw, mainStructured, historical, demographics) {
             processAndDisplayDashboard(mainRaw, mainStructured);
             renderCampaignsView(mainStructured);
+            renderCreativesView(mainStructured);
             
             createPerformanceChart(historical.data);
             createDeviceChart(demographics.device_platform);
@@ -407,7 +430,9 @@
                     roas: roas, cpa: cpa,
                     costPerConv: conversations > 0 ? (spend / conversations) : 0,
                     cpm: parseFloat(insights.cpm || 0), cpc: parseFloat(insights.cpc || 0),
-                    thumbnail_url: ad.ad_creative?.thumbnail_url
+                    thumbnail_url: ad.ad_creative?.thumbnail_url,
+                    campaignName: campaignName,
+                    adsetName: adsetName
                 };
                 campaigns[campaignName].adsets[adsetName].ads.push(adData);
             });
@@ -472,7 +497,7 @@
                     });
                     link.classList.add('bg-blue-600/20', 'text-blue-300');
                     link.classList.remove('text-slate-400', 'hover:bg-slate-700', 'hover:text-slate-200');
-                    ['dashboard-view', 'campaigns-view', 'analysis-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                    ['dashboard-view', 'campaigns-view', 'analysis-view', 'creatives-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
                     document.getElementById(`${targetId}-view`).classList.remove('hidden');
                 });
             });
@@ -510,7 +535,6 @@
         }
 
         function updateCostCalculationsUI() {
-            // Seção 1: Captura de Entradas
             const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 35.0;
             const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
             const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
@@ -518,7 +542,6 @@
             const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
             const lucroMeta = parseFloat(document.getElementById('lucro-liquido-par-meta').value) || 0;
             
-            // Seção 2: Cálculos baseados nas regras
             const qtdVendida = precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : (overallMetrics.totalPurchases || 0);
             const custoFixoUnitMeta = custosFixosMes / metaVendas;
             const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
@@ -575,7 +598,7 @@
         function displayKPIs(kpiData, costConfig) {
             const kpiGrid = document.getElementById('kpi-grid');
             kpiGrid.innerHTML = '';
-            const { spend, revenue, purchases, roas, roasGoal } = kpiData;
+            const { spend, revenue, roas, roasGoal } = kpiData;
             const { custoTotalProdutoMeta, roasIdeal, qtdVendida } = costConfig;
             
             const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 0;
@@ -587,12 +610,14 @@
             const roasReal = spend > 0 ? lucroLiquido / spend : 0;
             const margemLiquida = revenue > 0 ? (lucroLiquido / revenue) * 100 : 0;
             const cpaReal = qtdVendida > 0 ? spend / qtdVendida : 0;
+            const roiReal = spend > 0 ? (lucroLiquido / spend) * 100 : 0;
 
             const kpis = [
               { label: 'Investimento Total', value: formatCurrency(spend)},
               { label: 'Receita Total', value: formatCurrency(revenue) },
               { label: 'ROAS Facebook', value: formatNumber(roas), color: getPerformanceColor(roas, roasGoal) },
               { label: 'Lucro Líquido Real', value: formatCurrency(lucroLiquido), color: getPerformanceColor(lucroLiquido, 1) },
+              { label: '🎯 ROI REAL', value: `${formatNumber(roiReal, 1)}%`, color: getPerformanceColor(roiReal, 0) },
               { label: '🎯 ROAS REAL', value: formatNumber(roasReal), isGood: roasReal >= roasIdeal, isCritical: true },
               { label: 'Margem Líquida', value: `${formatNumber(margemLiquida,1)}%`, color: getPerformanceColor(margemLiquida, 30) },
               { label: 'Pares Vendidos (Calc)', value: Math.round(qtdVendida) },
