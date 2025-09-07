@@ -566,10 +566,6 @@
             const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 0;
             const ticketMedio = qtdVendida > 0 ? revenue / qtdVendida : precoMedioAssumido;
             
-            const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
-            const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
-            const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
-
             // Fórmula do Lucro Corrigida
             const lucroUnitarioReal = ticketMedio - custoTotalProdutoMeta;
             const lucroLiquido = lucroUnitarioReal * qtdVendida;
@@ -580,8 +576,8 @@
             const cpaReal = qtdVendida > 0 ? spend / qtdVendida : 0;
 
             const kpis = [
-              { label: 'Invest. Médio Diário', value: formatCurrency(investimentoMedioDiario)},
-              { label: 'Ticket Médio', value: formatCurrency(ticketMedio) },
+              { label: 'Investimento Total', value: formatCurrency(spend)},
+              { label: 'Receita Total', value: formatCurrency(revenue) },
               { label: 'ROAS Facebook', value: formatNumber(roas), color: getPerformanceColor(roas, roasGoal) },
               { label: 'Lucro Líquido Real', value: formatCurrency(lucroLiquido), color: getPerformanceColor(lucroLiquido, 1) },
               { label: '🎯 ROAS REAL', value: formatNumber(roasReal), isGood: roasReal >= roasIdeal, isCritical: true },
@@ -798,13 +794,20 @@
             let escalaCount = 0, otimizaCount = 0;
             sortedAdsets.forEach(data => {
                 if(data.spend === 0) return;
+
+                const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 35.0;
+                const qtdVendida = (data.purchases > 0) ? data.purchases : (precoMedioAssumido > 0 ? data.revenue / precoMedioAssumido : 0);
                 
-                const custoFixoUnitReal = (data.purchases || 0) > 0 ? (parseFloat(document.getElementById('custos-fixos-mes').value) || 0) / data.purchases : (parseFloat(document.getElementById('custos-fixos-mes').value) || 0);
                 const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
                 const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
-                const custoTotalProdutoReal = custoDireto + custoVariavel + custoFixoUnitReal;
+                const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
+                const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
+                const custoFixoUnitMeta = custosFixosMes / metaVendas;
+                
+                const ticketMedio = qtdVendida > 0 ? data.revenue / qtdVendida : precoMedioAssumido;
+                const lucroUnitario = ticketMedio - (custoDireto + custoVariavel + custoFixoUnitMeta);
+                const lucroReal = lucroUnitario * qtdVendida;
 
-                const lucroReal = data.revenue - (data.purchases * custoTotalProdutoReal);
                 const roasReal = data.spend > 0 ? lucroReal / data.spend : 0;
 
                 let statusClass, statusText;
