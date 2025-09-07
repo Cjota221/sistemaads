@@ -107,6 +107,30 @@
                     </section>
 
                     <div id="dashboard-content" class="space-y-10 hidden">
+                        <!-- NOVO PAINEL DE SAÚDE FINANCEIRA -->
+                        <div id="financial-health-panel" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-red-500/10 border border-red-500/30 p-4 rounded-lg text-center">
+                                <p class="text-sm font-semibold text-red-400">🔴 PERDENDO</p>
+                                <p class="text-2xl font-bold text-white" id="health-perda-valor">R$ 0</p>
+                                <p class="text-xs text-slate-400" id="health-perda-count">(0 campanhas)</p>
+                            </div>
+                            <div class="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg text-center">
+                                <p class="text-sm font-semibold text-yellow-400">🟡 EMPATE</p>
+                                <p class="text-2xl font-bold text-white" id="health-empate-valor">R$ 0</p>
+                                <p class="text-xs text-slate-400" id="health-empate-count">(0 campanhas)</p>
+                            </div>
+                            <div class="bg-green-500/10 border border-green-500/30 p-4 rounded-lg text-center">
+                                <p class="text-sm font-semibold text-green-400">🟢 LUCRANDO</p>
+                                <p class="text-2xl font-bold text-white" id="health-lucro-valor">R$ 0</p>
+                                <p class="text-xs text-slate-400" id="health-lucro-count">(0 campanhas)</p>
+                            </div>
+                            <div class="bg-blue-500/10 border border-blue-500/30 p-4 rounded-lg text-center">
+                                <p class="text-sm font-semibold text-blue-400">🚀 ESCALA</p>
+                                <p class="text-2xl font-bold text-white" id="health-escala-valor">R$ 0</p>
+                                <p class="text-xs text-slate-400" id="health-escala-count">(0 campanhas)</p>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-6" id="controls-container">
                             <div class="bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-700">
                                 <label for="start-date" class="block text-sm font-medium text-slate-400">Data de Início</label>
@@ -126,7 +150,6 @@
                             </div>
                         </div>
 
-                        <!-- SEÇÃO DE CUSTOS CORRIGIDA -->
                         <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700" id="cost-config-section">
                           <h3 class="text-lg font-bold text-slate-100 mb-4">⚙️ Configuração de Custos do Negócio</h3>
                           <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -198,14 +221,19 @@
                           </div>
                         </div>
 
-                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <!-- PAINEL DE AÇÕES RÁPIDAS -->
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
                             <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
-                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-green-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>A Escalar (Lucro Alto)</h3>
-                                <div id="escala-content" class="space-y-4"></div>
+                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-green-400">🚀 Ações para Escalar</h3>
+                                <div id="escalar-content" class="space-y-4"></div>
+                            </div>
+                             <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
+                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400">⚠️ Ações de Otimização</h3>
+                                <div id="atencao-content" class="space-y-4"></div>
                             </div>
                             <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700">
-                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>A Otimizar (Prejuízo/Lucro Baixo)</h3>
-                                <div id="otimiza-content" class="space-y-4"></div>
+                                <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-red-400">🛑 Ações para Pausar</h3>
+                                <div id="pausar-content" class="space-y-4"></div>
                             </div>
                         </div>
                     </div>
@@ -428,7 +456,8 @@
             const overallCPA = overallMetrics.totalPurchases > 0 ? (overallMetrics.totalSpend / overallMetrics.totalPurchases) : 0;
             
             displayKPIs({ spend: overallMetrics.totalSpend, revenue: overallMetrics.totalRevenue, purchases: overallMetrics.totalPurchases, roas: overallROAS, cpa: overallCPA, roasGoal, cpaGoal }, costConfig);
-            displayStrategicPanels(structuredData, roasGoal, cpaGoal, costConfig);
+            displayActionPanels(structuredData, roasGoal, cpaGoal, costConfig);
+            displayFinancialHealthPanel(structuredData, costConfig);
         }
         
         function setupNavigation() {
@@ -490,24 +519,17 @@
             const lucroMeta = parseFloat(document.getElementById('lucro-liquido-par-meta').value) || 0;
             
             // Seção 2: Cálculos baseados nas regras
-            // Regra 1: Quantidade de Pares Vendidos
             const qtdVendida = precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : (overallMetrics.totalPurchases || 0);
-
-            // Regra 2: Custo Fixo Unitário (SEMPRE PELA META)
             const custoFixoUnitMeta = custosFixosMes / metaVendas;
-
             const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
-
             const ticketMedio = (overallMetrics.totalPurchases || 0) > 0 ? (overallMetrics.totalRevenue || 0) / overallMetrics.totalPurchases : precoMedioAssumido;
 
-            // Regra 6: ROAS Mínimo (Breakeven)
             let roasMinimo = 0;
             if (ticketMedio > 0) {
                 const cpaBreakeven = ticketMedio - custoTotalProdutoMeta;
                 if (cpaBreakeven > 0) roasMinimo = ticketMedio / cpaBreakeven;
             }
             
-            // ROAS Ideal para atingir a meta de lucro
             let roasIdeal = 0;
             if (ticketMedio > 0) {
                 const cpaIdealParaLucro = ticketMedio - custoTotalProdutoMeta - lucroMeta;
@@ -516,7 +538,6 @@
                 }
             }
             
-            // Seção 3: Atualização da UI
             document.getElementById('custo-total-produto-meta').textContent = formatCurrency(custoTotalProdutoMeta);
             document.getElementById('roas-minimo-empate').textContent = formatNumber(roasMinimo, 1);
             document.getElementById('roas-ideal').textContent = formatNumber(roasIdeal, 1);
@@ -557,22 +578,14 @@
             const { spend, revenue, purchases, roas, roasGoal } = kpiData;
             const { custoTotalProdutoMeta, roasIdeal, qtdVendida } = costConfig;
             
-            const startDate = new Date(document.getElementById('start-date').value + 'T00:00:00Z');
-            const endDate = new Date(document.getElementById('end-date').value + 'T23:59:59Z');
-            const diffTime = Math.abs(endDate - startDate);
-            const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-            const investimentoMedioDiario = spend / diffDays;
-            
             const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 0;
             const ticketMedio = qtdVendida > 0 ? revenue / qtdVendida : precoMedioAssumido;
             
-            // Fórmula do Lucro Corrigida
             const lucroUnitarioReal = ticketMedio - custoTotalProdutoMeta;
             const lucroLiquido = lucroUnitarioReal * qtdVendida;
 
             const roasReal = spend > 0 ? lucroLiquido / spend : 0;
             const margemLiquida = revenue > 0 ? (lucroLiquido / revenue) * 100 : 0;
-            
             const cpaReal = qtdVendida > 0 ? spend / qtdVendida : 0;
 
             const kpis = [
@@ -714,14 +727,8 @@
                     const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 35.0;
                     const qtdVendida = (c.purchases > 0) ? c.purchases : (precoMedioAssumido > 0 ? c.revenue / precoMedioAssumido : 0);
                     
-                    const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
-                    const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
-                    const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
-                    const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
-                    const custoFixoUnitMeta = custosFixosMes / metaVendas;
-                    
                     const ticketMedio = qtdVendida > 0 ? c.revenue / qtdVendida : precoMedioAssumido;
-                    const lucroUnitario = ticketMedio - (custoDireto + custoVariavel + custoFixoUnitMeta);
+                    const lucroUnitario = ticketMedio - costConfig.custoTotalProdutoMeta;
                     const lucroReal = lucroUnitario * qtdVendida;
 
                     return { name: c.name, profit: lucroReal };
@@ -776,11 +783,13 @@
             `).join('');
         }
         
-        function displayStrategicPanels(structuredData, roasGoal, cpaGoal, costConfig) {
-            const escalaContent = document.getElementById('escala-content');
-            const otimizaContent = document.getElementById('otimiza-content');
+        function displayActionPanels(structuredData, roasGoal, cpaGoal, costConfig) {
+            const escalaContent = document.getElementById('escalar-content');
+            const atencaoContent = document.getElementById('atencao-content');
+            const pausarContent = document.getElementById('pausar-content');
             escalaContent.innerHTML = '';
-            otimizaContent.innerHTML = '';
+            atencaoContent.innerHTML = '';
+            pausarContent.innerHTML = '';
             
             let salesAdsets = [];
             structuredData.forEach(c => {
@@ -791,30 +800,25 @@
             
             const sortedAdsets = salesAdsets.sort((a,b) => b.spend - a.spend);
 
-            let escalaCount = 0, otimizaCount = 0;
+            const { roasIdeal, roasMinimo, custoTotalProdutoMeta } = costConfig;
+            
+            let escalaCount = 0, atencaoCount = 0, pausarCount = 0;
             sortedAdsets.forEach(data => {
                 if(data.spend === 0) return;
-
+                
                 const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 35.0;
                 const qtdVendida = (data.purchases > 0) ? data.purchases : (precoMedioAssumido > 0 ? data.revenue / precoMedioAssumido : 0);
-                
-                const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
-                const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
-                const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
-                const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
-                const custoFixoUnitMeta = custosFixosMes / metaVendas;
-                
                 const ticketMedio = qtdVendida > 0 ? data.revenue / qtdVendida : precoMedioAssumido;
-                const lucroUnitario = ticketMedio - (custoDireto + custoVariavel + custoFixoUnitMeta);
-                const lucroReal = lucroUnitario * qtdVendida;
 
+                const lucroUnitario = ticketMedio - custoTotalProdutoMeta;
+                const lucroReal = lucroUnitario * qtdVendida;
                 const roasReal = data.spend > 0 ? lucroReal / data.spend : 0;
 
                 let statusClass, statusText;
-                if (roasReal >= costConfig.roasIdeal) {
+                if (roasReal >= roasIdeal) {
                     statusClass = 'text-green-400';
                     statusText = '🚀 ESCALAR';
-                } else if (roasReal >= costConfig.roasMinimo) {
+                } else if (roasReal >= roasMinimo) {
                     statusClass = 'text-yellow-400';
                     statusText = '⚠️ MELHORAR';
                 } else {
@@ -841,17 +845,67 @@
                         </div>
                     </div>`;
 
-                if (roasReal >= costConfig.roasIdeal && lucroReal > 0) {
+                if (statusText === '🚀 ESCALAR' && lucroReal > 0) {
                     escalaContent.innerHTML += cardHtml;
                     escalaCount++;
+                } else if (statusText === '⚠️ MELHORAR') {
+                    atencaoContent.innerHTML += cardHtml;
+                    atencaoCount++;
                 } else {
-                    otimizaContent.innerHTML += cardHtml;
-                    otimizaCount++;
+                    pausarContent.innerHTML += cardHtml;
+                    pausarCount++;
                 }
             });
 
-            if (escalaCount === 0) escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads atingiu a meta de ROAS Real para escalar.</p>';
-            if (otimizaCount === 0) otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads a otimizar encontrado.</p>';
+            if (escalaCount === 0) escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto atingiu a meta de ROAS para escalar.</p>';
+            if (atencaoCount === 0) atencaoContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto precisando de otimização no momento.</p>';
+            if (pausarCount === 0) pausarContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto com prejuízo crítico encontrado.</p>';
+        }
+
+        function displayFinancialHealthPanel(structuredData, costConfig) {
+            const health = {
+                perda: { valor: 0, count: 0 },
+                empate: { valor: 0, count: 0 },
+                lucro: { valor: 0, count: 0 },
+                escala: { valor: 0, count: 0 }
+            };
+
+            const { roasMinimo, roasIdeal, custoTotalProdutoMeta } = costConfig;
+
+            structuredData.forEach(campaign => {
+                if (campaign.objective !== 'OUTCOME_SALES' && campaign.objective !== 'OUTCOME_LEADS') return;
+
+                const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 35.0;
+                const qtdVendida = (campaign.purchases > 0) ? campaign.purchases : (precoMedioAssumido > 0 ? campaign.revenue / precoMedioAssumido : 0);
+                const ticketMedio = qtdVendida > 0 ? campaign.revenue / qtdVendida : precoMedioAssumido;
+
+                const lucroUnitario = ticketMedio - custoTotalProdutoMeta;
+                const lucroReal = lucroUnitario * qtdVendida;
+                const roasReal = campaign.spend > 0 ? lucroReal / campaign.spend : 0;
+
+                if (roasReal < roasMinimo) {
+                    health.perda.valor += campaign.spend;
+                    health.perda.count++;
+                } else if (roasReal < roasIdeal) {
+                    health.empate.valor += campaign.spend;
+                    health.empate.count++;
+                } else if (roasReal < roasIdeal * 1.5) { // Limite para "Lucrando"
+                    health.lucro.valor += campaign.spend;
+                    health.lucro.count++;
+                } else { // Acima de 1.5x o ROAS ideal é "Escala"
+                    health.escala.valor += campaign.spend;
+                    health.escala.count++;
+                }
+            });
+
+            document.getElementById('health-perda-valor').textContent = formatCurrency(health.perda.valor);
+            document.getElementById('health-perda-count').textContent = `(${health.perda.count} campanhas)`;
+            document.getElementById('health-empate-valor').textContent = formatCurrency(health.empate.valor);
+            document.getElementById('health-empate-count').textContent = `(${health.empate.count} campanhas)`;
+            document.getElementById('health-lucro-valor').textContent = formatCurrency(health.lucro.valor);
+            document.getElementById('health-lucro-count').textContent = `(${health.lucro.count} campanhas)`;
+            document.getElementById('health-escala-valor').textContent = formatCurrency(health.escala.valor);
+            document.getElementById('health-escala-count').textContent = `(${health.escala.count} campanhas)`;
         }
 
         function confirmStatusChange(adsetId, adsetName, newStatus) {
