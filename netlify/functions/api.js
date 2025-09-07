@@ -173,8 +173,20 @@ router.post('/analyze', async (req, res) => {
 });
 
 // --- Rotas de Gestão ---
-router.post('/update-adset-status', async (req, res) => { /* ... */ });
-router.post('/update-adset-budget', async (req, res) => { /* ... */ });
+router.post('/update-adset-status', async (req, res) => {
+    const { token, adset_id, status } = req.body;
+    try {
+        const response = await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, { params: { access_token: token, status } });
+        res.json(response.data);
+    } catch (error) { res.status(500).json({ error: 'Falha ao atualizar o status.', details: error.response?.data || {} }) }
+});
+router.post('/update-adset-budget', async (req, res) => {
+    const { token, adset_id, daily_budget } = req.body;
+    try {
+        const response = await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, { params: { access_token: token, daily_budget: parseFloat(daily_budget) * 100 } });
+        res.json(response.data);
+    } catch (error) { res.status(500).json({ error: 'Falha ao atualizar o orçamento.', details: error.response?.data || {} }) }
+});
 
 app.use('/.netlify/functions/api', router);
 module.exports.handler = serverless(app);
