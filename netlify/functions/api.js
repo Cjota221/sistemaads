@@ -75,63 +75,100 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// --- ROTA DE ANÁLISE IA (REVISADA E CORRIGIDA) ---
+// --- Motor de Análise Baseado em Regras ---
+function runRuleBasedAnalysis(userGoals, campaignData) {
+    const insights = [];
+    const roasGoal = parseFloat(userGoals.roasGoal);
+    const cpaGoal = parseFloat(userGoals.cpaGoal);
+
+    for (const adset of campaignData) {
+        if (adset.spend < 1) continue; // Ignora conjuntos sem investimento significativo
+
+        // Regra 1: Oportunidade de Escala
+        if (adset.roas >= roasGoal && adset.cpa <= cpaGoal && adset.status === 'ACTIVE') {
+            insights.push({
+                priority: "Alta",
+                title: `Oportunidade de Escala em "${adset.name}"`,
+                diagnosis: `Este conjunto está com um excelente desempenho, com ROAS de ${adset.roas.toFixed(2)} (meta: ${roasGoal}) e CPA de R$ ${adset.cpa.toFixed(2)} (teto: R$ ${cpaGoal}).`,
+                action_plan: [
+                    "Aumente o orçamento diário deste conjunto em 20% para maximizar os resultados.",
+                    "Continue a monitorizar o ROAS e o CPA de perto nas próximas 48 horas."
+                ]
+            });
+        }
+
+        // Regra 2: Alerta de Prejuízo
+        if (adset.roas < 1.0 && adset.spend > cpaGoal * 2) { // Só alerta se o gasto já for considerável
+             insights.push({
+                priority: "Alta",
+                title: `Alerta de Prejuízo em "${adset.name}"`,
+                diagnosis: `Este conjunto gastou R$ ${adset.spend.toFixed(2)} e gerou apenas R$ ${adset.revenue.toFixed(2)} (ROAS de ${adset.roas.toFixed(2)}), resultando em prejuízo.`,
+                action_plan: [
+                    "Pause este conjunto de anúncios imediatamente para estancar o prejuízo.",
+                    "Analise os criativos e o público antes de considerar reativá-lo com novas abordagens."
+                ]
+            });
+        }
+        
+        // Regra 3: Otimização de CPA
+        if (adset.roas >= 1.0 && adset.cpa > cpaGoal && adset.status === 'ACTIVE') {
+            insights.push({
+                priority: "Média",
+                title: `Otimizar CPA em "${adset.name}"`,
+                diagnosis: `O conjunto está a dar lucro (ROAS de ${adset.roas.toFixed(2)}), mas o Custo por Compra de R$ ${adset.cpa.toFixed(2)} está acima do seu teto de R$ ${cpaGoal}.`,
+                action_plan: [
+                    "Verifique os criativos com menor performance (CTR baixo) e pause-os.",
+                    "Considere refinar o público-alvo para ser mais específico.",
+                    "Não aumente o orçamento até que o CPA esteja sob controlo."
+                ]
+            });
+        }
+        
+         // Regra 4: Criativo com Potencial
+        if (adset.ctr > 2.5 && adset.cpc < 1.0 && adset.purchases < 2) {
+             insights.push({
+                priority: "Média",
+                title: `Potencial em Criativos de "${adset.name}"`,
+                diagnosis: `Este conjunto tem anúncios com excelente CTR (${adset.ctr.toFixed(2)}%) e CPC (R$ ${adset.cpc.toFixed(2)}), indicando que o público está interessado, mas não está a converter em compras.`,
+                action_plan: [
+                    "Verifique se a página de destino está a funcionar corretamente e otimizada para conversão.",
+                    "Certifique-se de que a oferta no anúncio corresponde exatamente à da página de destino."
+                ]
+            });
+        }
+    }
+    
+    if (insights.length === 0) {
+        insights.push({
+            priority: "Baixa",
+            title: "Nenhuma Ação Crítica Necessária",
+            diagnosis: "Com base nas suas metas, as campanhas ativas parecem estáveis. Continue a monitorizar o desempenho.",
+            action_plan: [
+                "Verifique novamente amanhã para novos insights.",
+                "Considere testar novos criativos para encontrar novas oportunidades."
+            ]
+        });
+    }
+
+    return insights;
+}
+
+// --- ROTA DE ANÁLISE (AGORA USA O MOTOR DE REGRAS INTERNO) ---
 router.post('/analyze', async (req, res) => {
     const { userGoals, campaignData } = req.body;
-    // Define a chave de API como uma string vazia.
-    // O ambiente de execução irá substituí-la pela chave correta automaticamente.
-    const GEMINI_API_KEY = '';
 
     if (!userGoals || !campaignData) {
         return res.status(400).json({ error: 'Metas do utilizador e dados de campanha são necessários.' });
     }
 
-    const systemPrompt = `
-        Assuma a persona de um estratega de marketing digital de classe mundial, especialista em otimização de campanhas de tráfego pago. O seu nome é "CJ-AI".
-        O seu objetivo principal é analisar um conjunto de dados de performance de anúncios do Facebook (fornecido em formato JSON) e gerar um plano de ação claro, conciso e priorizado para ajudar o utilizador a atingir as suas metas de ROAS e CPA.
-        Analise os dados com base em oportunidades de escala, pontos de otimização e eficiência de criativos.
-        A sua resposta DEVE ser um objeto JSON formatado como um array de "cartões de insight". Cada objeto no array representa uma única recomendação e deve seguir estritamente a seguinte estrutura:
-        [{"priority": "Alta" | "Média" | "Baixa", "title": "Título da Recomendação", "diagnosis": "Diagnóstico conciso.", "action_plan": ["Ação 1.", "Ação 2."]}]
-    `;
-
-    const userQuery = `
-        Aqui estão os dados para análise:
-        - Metas do Utilizador: ${JSON.stringify(userGoals)}
-        - Dados das Campanhas: ${JSON.stringify(campaignData, null, 2)}
-        Por favor, gere o plano de ação no formato JSON especificado.
-    `;
-
     try {
-        // A URL agora usa a chave de API que será preenchida pelo ambiente.
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const payload = {
-            contents: [{
-                parts: [{ text: userQuery }]
-            }],
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
-            generationConfig: {
-                responseMimeType: "application/json",
-            }
-        };
-
-        const geminiResponse = await axios.post(geminiUrl, payload);
-        
-        if (!geminiResponse.data.candidates || !geminiResponse.data.candidates[0].content.parts[0].text) {
-             throw new Error("A resposta da IA não continha o conteúdo esperado.");
-        }
-        
-        const responseText = geminiResponse.data.candidates[0].content.parts[0].text;
-        
-        const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
-        res.json(JSON.parse(cleanedJson));
+        // Chama a função de análise local em vez da API externa
+        const analysisResults = runRuleBasedAnalysis(userGoals, campaignData);
+        res.json(analysisResults);
 
     } catch (error) {
-        console.error('Erro ao chamar a API da IA:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Falha ao comunicar com o serviço de IA.', details: error.response ? error.response.data : {} });
+        console.error('Erro durante a análise baseada em regras:', error.message);
+        res.status(500).json({ error: 'Falha ao processar a análise interna.', details: error.message });
     }
 });
 
