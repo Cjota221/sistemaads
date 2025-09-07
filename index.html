@@ -496,15 +496,13 @@
             // Regra 2: Custo Fixo Unitário (SEMPRE PELA META)
             const custoFixoUnitMeta = custosFixosMes / metaVendas;
 
-            // Custo Total por produto (baseado no real) - CORREÇÃO APLICADA AQUI
-            const custoTotalProdutoReal = custoDireto + custoVariavel + custoFixoUnitMeta; // Usa CFU da meta
+            const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
 
             const ticketMedio = (overallMetrics.totalPurchases || 0) > 0 ? (overallMetrics.totalRevenue || 0) / overallMetrics.totalPurchases : precoMedioAssumido;
 
             // Regra 6: ROAS Mínimo (Breakeven)
             let roasMinimo = 0;
             if (ticketMedio > 0) {
-                const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
                 const cpaBreakeven = ticketMedio - custoTotalProdutoMeta;
                 if (cpaBreakeven > 0) roasMinimo = ticketMedio / cpaBreakeven;
             }
@@ -512,7 +510,6 @@
             // ROAS Ideal para atingir a meta de lucro
             let roasIdeal = 0;
             if (ticketMedio > 0) {
-                const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
                 const cpaIdealParaLucro = ticketMedio - custoTotalProdutoMeta - lucroMeta;
                 if (cpaIdealParaLucro > 0) {
                     roasIdeal = ticketMedio / cpaIdealParaLucro;
@@ -520,11 +517,11 @@
             }
             
             // Seção 3: Atualização da UI
-            document.getElementById('custo-total-produto-real').textContent = formatCurrency(custoTotalProdutoReal);
+            document.getElementById('custo-total-produto-meta').textContent = formatCurrency(custoTotalProdutoMeta);
             document.getElementById('roas-minimo-empate').textContent = formatNumber(roasMinimo, 1);
             document.getElementById('roas-ideal').textContent = formatNumber(roasIdeal, 1);
 
-            return { custoTotalProdutoReal, roasMinimo, roasIdeal, qtdVendida };
+            return { custoTotalProdutoMeta, roasMinimo, roasIdeal, qtdVendida };
         }
 
 
@@ -558,7 +555,7 @@
             const kpiGrid = document.getElementById('kpi-grid');
             kpiGrid.innerHTML = '';
             const { spend, revenue, purchases, roas, roasGoal } = kpiData;
-            const { custoTotalProdutoReal, roasIdeal, qtdVendida } = costConfig;
+            const { custoTotalProdutoMeta, roasIdeal, qtdVendida } = costConfig;
             
             const startDate = new Date(document.getElementById('start-date').value + 'T00:00:00Z');
             const endDate = new Date(document.getElementById('end-date').value + 'T23:59:59Z');
@@ -572,11 +569,9 @@
             const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
             const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
             const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
-            const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
-            const custoFixoUnitMeta = custosFixosMes / metaVendas;
 
             // Fórmula do Lucro Corrigida
-            const lucroUnitarioReal = ticketMedio - (custoDireto + custoVariavel + custoFixoUnitMeta);
+            const lucroUnitarioReal = ticketMedio - custoTotalProdutoMeta;
             const lucroLiquido = lucroUnitarioReal * qtdVendida;
 
             const roasReal = spend > 0 ? lucroLiquido / spend : 0;
@@ -592,7 +587,7 @@
               { label: '🎯 ROAS REAL', value: formatNumber(roasReal), isGood: roasReal >= roasIdeal, isCritical: true },
               { label: 'Margem Líquida', value: `${formatNumber(margemLiquida,1)}%`, color: getPerformanceColor(margemLiquida, 30) },
               { label: 'Pares Vendidos (Calc)', value: Math.round(qtdVendida) },
-              { label: 'CPA Real (Tráfego)', value: formatCurrency(cpaReal) }
+              { label: 'CPA (Custo por Par)', value: formatCurrency(cpaReal) }
             ];
 
             kpiGrid.innerHTML = kpis.map(kpi => {
@@ -720,10 +715,19 @@
             const salesCampaigns = structuredData
                 .filter(c => c.objective === 'OUTCOME_SALES')
                 .map(c => {
-                    const qtdVendida = (c.purchases > 0) ? c.purchases : ((costConfig.precoMedioAssumido > 0) ? c.revenue / costConfig.precoMedioAssumido : 0);
-                    const custoFixoUnitMeta = (costConfig.metaVendas > 0) ? costConfig.custosFixosMes / costConfig.metaVendas : 0;
-                    const lucroUnitario = (costConfig.ticketMedio || costConfig.precoMedioAssumido) - (costConfig.custoDireto + costConfig.custoVariavel + custoFixoUnitMeta);
+                    const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 35.0;
+                    const qtdVendida = (c.purchases > 0) ? c.purchases : (precoMedioAssumido > 0 ? c.revenue / precoMedioAssumido : 0);
+                    
+                    const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
+                    const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
+                    const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
+                    const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
+                    const custoFixoUnitMeta = custosFixosMes / metaVendas;
+                    
+                    const ticketMedio = qtdVendida > 0 ? c.revenue / qtdVendida : precoMedioAssumido;
+                    const lucroUnitario = ticketMedio - (custoDireto + custoVariavel + custoFixoUnitMeta);
                     const lucroReal = lucroUnitario * qtdVendida;
+
                     return { name: c.name, profit: lucroReal };
                 })
                 .filter(c => c.profit > 0)
