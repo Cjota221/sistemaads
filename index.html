@@ -278,7 +278,6 @@
             processAndDisplayDashboard(mainRaw, mainStructured);
             renderCampaignsView(mainStructured);
             
-            // Renderiza todos os gráficos com os novos dados
             createPerformanceChart(historical.data);
             createDeviceChart(demographics.device_platform);
             createROASScatterChart(mainStructured);
@@ -328,17 +327,17 @@
             });
             
             Object.values(campaigns).forEach(campaign => {
-                let totalImpressions = 0; let totalClicks = 0; let adCount = 0;
+                let totalImpressions = 0;
                 Object.values(campaign.adsets).forEach(adset => {
-                    let adsetImpressions = 0; let adsetAdCount = 0;
+                    let adsetImpressions = 0; let adsetAdCount = 0; let adsetCTRSum = 0;
                     adset.ads.forEach(ad => {
                         adset.spend += ad.spend; adset.purchases += ad.purchases; adset.revenue += ad.revenue;
                         adset.conversations += ad.conversations; adset.clicks += ad.clicks; adset.reach += ad.reach;
                         adsetImpressions += ad.impressions;
-                        adset.ctr += ad.ctr;
+                        adsetCTRSum += ad.ctr;
                         adsetAdCount++;
                     });
-                    if (adsetAdCount > 0) adset.ctr /= adsetAdCount;
+                    if (adsetAdCount > 0) adset.ctr = adsetCTRSum / adsetAdCount;
                     if(adsetImpressions > 0 && adset.reach > 0) adset.frequency = adsetImpressions / adset.reach;
                      
                     campaign.spend += adset.spend; campaign.purchases += adset.purchases; campaign.revenue += adset.revenue;
@@ -355,14 +354,10 @@
             const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
             const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
             let totalSpend = 0, totalRevenue = 0, totalPurchases = 0, totalClicks = 0, totalImpressions = 0, totalReach = 0;
-            let adsets = {};
 
             data.forEach(ad => {
-                if (!ad.insights?.data?.[0] || !ad.adset) return;
+                if (!ad.insights?.data?.[0]) return;
                 const insights = ad.insights.data[0];
-                const adsetName = ad.adset.name;
-
-                if (!adsets[adsetName]) adsets[adsetName] = { id: ad.adset.id, objective: ad.campaign.objective, status: ad.adset.effective_status, budget: (parseFloat(ad.adset.daily_budget) / 100) || 0, spend: 0, revenue: 0, purchases: 0, ctr: 0, cpm: 0, cpc: 0, adCount: 0 };
                 
                 totalSpend += parseFloat(insights.spend || 0);
                 totalRevenue += parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
@@ -383,22 +378,67 @@
             displayStrategicPanels(structuredData, roasGoal, cpaGoal);
         }
         
-        function setupNavigation() { /* ... */ }
-        function setupAccordions() { /* ... */ }
+        function setupNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    navLinks.forEach(l => {
+                        l.classList.remove('bg-blue-600/20', 'text-blue-300');
+                        l.classList.add('text-slate-400', 'hover:bg-slate-700', 'hover:text-slate-200');
+                    });
+                    link.classList.add('bg-blue-600/20', 'text-blue-300');
+                    link.classList.remove('text-slate-400', 'hover:bg-slate-700', 'hover:text-slate-200');
+                    ['dashboard-view', 'campaigns-view', 'analysis-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
+                    document.getElementById(`${targetId}-view`).classList.remove('hidden');
+                });
+            });
+        }
+        
+        function setupAccordions() {
+             document.body.addEventListener('click', function(event) {
+                const trigger = event.target.closest('[data-accordion-trigger]');
+                if (trigger) {
+                    const content = trigger.nextElementSibling;
+                    const icon = trigger.querySelector('svg.transition-transform');
+                    if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                        content.style.maxHeight = null;
+                        if(icon) icon.style.transform = 'rotate(0deg)';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        if(icon) icon.style.transform = 'rotate(180deg)';
+                    }
+                }
+            });
+        }
         function setupAutomaticAnalysis() {
             const reFetch = () => accessToken && fetchAllData(accessToken);
             document.getElementById('start-date').addEventListener('change', reFetch);
             document.getElementById('end-date').addEventListener('change', reFetch);
             
-            const reProcess = () => rawAdData.length > 0 && processAndDisplayAll(rawAdData, structuredCampaigns, {}, {}); // Placeholder, needs real data
+            const reProcess = () => {
+                if(rawAdData.length > 0) {
+                   processAndDisplayDashboard(rawAdData, structuredCampaigns);
+                }
+            };
             document.getElementById('roas-goal').addEventListener('change', reProcess);
             document.getElementById('cpa-goal').addEventListener('change', reProcess);
         }
-        function setDefaultDates() { /* ... */ }
-        function getObjectiveInfo(objective) { /* ... */ }
+        function setDefaultDates() {
+             const endDate = new Date(), startDate = new Date();
+            startDate.setDate(endDate.getDate() - 29);
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            document.getElementById('end-date').value = formatDate(endDate);
+            document.getElementById('start-date').value = formatDate(startDate);
+        }
+        function getObjectiveInfo(objective) {
+            const objectives = { 'OUTCOME_SALES': { label: 'VENDAS', color: 'bg-green-500/20 text-green-300' }, 'OUTCOME_LEADS': { label: 'LEADS', color: 'bg-blue-500/20 text-blue-300' }, 'OUTCOME_MESSAGES': { label: 'MENSAGENS', color: 'bg-cyan-500/20 text-cyan-300' }, 'OUTCOME_TRAFFIC': { label: 'TRÁFEGO', color: 'bg-purple-500/20 text-purple-300' }, 'OUTCOME_AWARENESS': { label: 'ALCANCE', color: 'bg-yellow-500/20 text-yellow-300' }, 'OUTCOME_ENGAGEMENT': { label: 'ENGAJAMENTO', color: 'bg-pink-500/20 text-pink-300' } };
+            return objectives[objective] || { label: objective, color: 'bg-slate-600 text-slate-300' };
+        }
 
         function getPerformanceColor(metric, target, isHigherBetter = true) {
-            if (!target || target === 0 || !isFinite(metric)) return 'text-slate-100';
+            if (target == null || target === 0 || !isFinite(metric)) return 'text-slate-100';
             const ratio = metric / target;
             if (isHigherBetter) {
                 if (ratio >= 1.2) return 'text-green-400';
@@ -421,16 +461,16 @@
             const kpis = [
               { label: 'Investimento Total', value: `R$ ${spend.toFixed(2)}` },
               { label: 'Receita (Vendas)', value: `R$ ${revenue.toFixed(2)}` },
-              { label: 'Lucro Líquido', value: `R$ ${profit.toFixed(2)}`, color: getPerformanceColor(profit, 1, true) },
-              { label: 'Margem de Lucro', value: `${profitMargin.toFixed(1)}%`, color: getPerformanceColor(profitMargin, 20, true) },
+              { label: 'Lucro Líquido', value: `R$ ${profit.toFixed(2)}`, color: getPerformanceColor(profit, 1) },
+              { label: 'Margem de Lucro', value: `${profitMargin.toFixed(1)}%`, color: getPerformanceColor(profitMargin, 20) },
               { label: 'Compras', value: purchases },
-              { label: 'ROAS (Vendas)', value: roas.toFixed(2), color: getPerformanceColor(roas, roasGoal, true) },
+              { label: 'ROAS (Vendas)', value: roas.toFixed(2), color: getPerformanceColor(roas, roasGoal) },
               { label: 'CPA (Vendas)', value: `R$ ${cpa.toFixed(2)}`, color: getPerformanceColor(cpa, cpaGoal, false) },
-              { label: 'CTR Médio', value: `${avgCTR.toFixed(2)}%`, color: getPerformanceColor(avgCTR, 1.5, true) },
+              { label: 'CTR Médio', value: `${avgCTR.toFixed(2)}%`, color: getPerformanceColor(avgCTR, 1.5) },
               { label: 'CPM Médio', value: `R$ ${avgCPM.toFixed(2)}` },
               { label: 'Frequência Média', value: avgFrequency.toFixed(2), color: getPerformanceColor(avgFrequency, 3, false) },
               { label: 'Alcance Total', value: totalReach.toLocaleString() },
-              { label: 'Taxa de Conversão', value: `${conversionRate.toFixed(2)}%`, color: getPerformanceColor(conversionRate, 2, true) }
+              { label: 'Taxa de Conversão', value: `${conversionRate.toFixed(2)}%`, color: getPerformanceColor(conversionRate, 2) }
             ];
 
             kpis.forEach(kpi => {
@@ -439,8 +479,44 @@
             });
         }
         
-        function renderCampaignsView(campaignsData) { /* ... */ }
-        function getCampaignKPIsHTML(campaign) { /* ... */ }
+        function renderCampaignsView(campaignsData) {
+            const container = document.getElementById('campaigns-content');
+            if (!container) return;
+            container.innerHTML = campaignsData.length === 0 ? '<p class="text-slate-500 text-center py-10">Nenhuma campanha encontrada no período selecionado.</p>' : campaignsData.map(campaign => {
+                const objectiveInfo = getObjectiveInfo(campaign.objective);
+                const kpisHtml = getCampaignKPIsHTML(campaign);
+                const adsetsHtml = Object.values(campaign.adsets).map(adset => {
+                    const adsHtml = adset.ads.map(ad => {
+                        const creativeHtml = ad.thumbnail_url 
+                            ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
+                            : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
+                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">R$ ${ad.spend.toFixed(2)}</span></p><p>${campaign.objective === 'OUTCOME_MESSAGES' ? 'Conversas' : 'Compras'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_MESSAGES' ? ad.conversations : ad.purchases}</span></p><p>${campaign.objective === 'OUTCOME_SALES' ? 'ROAS' : 'CTR'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_SALES' ? ad.roas.toFixed(2) : ad.ctr.toFixed(2)+'%'}</span></p><p>CPC: <span class="font-bold text-slate-200">R$ ${ad.cpc.toFixed(2)}</span></p></div></div></div>`;
+                    }).join('');
+                    return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adset.name}</p></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
+                }).join('');
+                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><div class="flex-1"><div class="flex items-center gap-3 mb-2"><span class="text-xs font-bold px-3 py-1 rounded-full ${objectiveInfo.color}">${objectiveInfo.label}</span></div><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaign.name}</h3></div><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">${kpisHtml}</div></button><div data-accordion-content class="bg-slate-800/50 border-t border-slate-700"><div class="inner-scroll-container p-4 md:p-6 space-y-4">${adsetsHtml}</div></div></div>`;
+            }).join('');
+        }
+
+        function getCampaignKPIsHTML(campaign) {
+            const roasGoal = parseFloat(document.getElementById('roas-goal').value);
+            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value);
+            const { objective, spend, revenue, purchases, conversations, clicks } = campaign;
+            const roas = spend > 0 ? (revenue / spend) : 0;
+            const cpa = purchases > 0 ? (spend / purchases) : 0;
+            const costPerConv = conversations > 0 ? (spend / conversations) : 0;
+            const cpc = clicks > 0 ? (spend / clicks) : 0;
+            
+            let kpis = [{ label: 'Investimento', value: `R$ ${spend.toFixed(2)}` }];
+            if (objective === 'OUTCOME_SALES' || objective === 'OUTCOME_LEADS') kpis.push({ label: 'Receita', value: `R$ ${revenue.toFixed(2)}` }, { label: 'ROAS', value: roas.toFixed(2), isGood: roas >= roasGoal }, { label: 'CPA', value: `R$ ${cpa.toFixed(2)}`, isGood: cpa > 0 && cpa <= cpaGoal });
+            else if (objective === 'OUTCOME_MESSAGES') kpis.push({ label: 'Conversas', value: conversations }, { label: 'Custo/Conversa', value: `R$ ${costPerConv.toFixed(2)}`, isGood: costPerConv < 10 }, { label: 'Cliques', value: clicks });
+            else kpis.push({ label: 'Cliques', value: clicks }, { label: 'CPC', value: `R$ ${cpc.toFixed(2)}`, isGood: cpc < 1.50 }, { label: 'Alcance', value: campaign.reach.toLocaleString() });
+            
+            return kpis.map(kpi => {
+                const colorClass = kpi.hasOwnProperty('isGood') ? (kpi.isGood ? 'text-green-400' : 'text-red-400') : 'text-slate-100';
+                return `<div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">${kpi.label}</p><p class="text-lg sm:text-2xl font-bold ${colorClass}">${kpi.value}</p></div>`;
+            }).join('');
+        }
 
         function destroyChart(chartId) {
             if (activeCharts[chartId]) {
@@ -453,16 +529,15 @@
             destroyChart('performance-chart');
             if (!historicalData || historicalData.length === 0) return;
             const ctx = document.getElementById('performance-chart').getContext('2d');
-            const labels = historicalData.map(d => new Date(d.date_start).toLocaleDateString('pt-BR'));
+            const labels = historicalData.map(d => new Date(d.date_start).toLocaleDateString('pt-BR', {month: '2-digit', day: '2-digit'}));
             
             activeCharts['performance-chart'] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels,
                     datasets: [
-                        { label: 'Investimento (R$)', data: historicalData.map(d => d.spend), yAxisID: 'y', borderColor: '#60a5fa' },
-                        { label: 'ROAS', data: historicalData.map(d => (d.action_values?.find(a=>a.action_type==='purchase')?.value || 0) / d.spend), yAxisID: 'y1', borderColor: '#4ade80' },
-                        { label: 'CPA (R$)', data: historicalData.map(d => d.spend / (d.actions?.find(a=>a.action_type==='purchase')?.value || 1)), yAxisID: 'y1', borderColor: '#f87171' }
+                        { label: 'Investimento (R$)', data: historicalData.map(d => parseFloat(d.spend || 0)), yAxisID: 'y', borderColor: '#60a5fa', backgroundColor: '#60a5fa20', tension: 0.3 },
+                        { label: 'ROAS', data: historicalData.map(d => { const r = parseFloat(d.action_values?.find(a=>a.action_type==='purchase')?.value || 0); const s = parseFloat(d.spend || 1); return s > 0 ? r/s : 0; }), yAxisID: 'y1', borderColor: '#4ade80', backgroundColor: '#4ade8020', tension: 0.3 },
                     ]
                 },
                 options: { scales: { y: { type: 'linear', display: true, position: 'left', title: { text: 'R$', display: true, color: '#94a3b8' }, ticks: { color: '#94a3b8' } }, y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { text: 'Métricas', display: true, color: '#94a3b8' }, ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#94a3b8' } } } }
@@ -473,14 +548,14 @@
             destroyChart('device-chart');
             if (!deviceData || deviceData.length === 0) return;
             const ctx = document.getElementById('device-chart').getContext('2d');
-            const labels = deviceData.map(d => d.device_platform);
-            const data = deviceData.map(d => d.spend);
+            const labels = deviceData.map(d => d.device_platform.charAt(0).toUpperCase() + d.device_platform.slice(1));
+            const data = deviceData.map(d => parseFloat(d.spend || 0));
 
             activeCharts['device-chart'] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels,
-                    datasets: [{ label: 'Investimento por Dispositivo', data, backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899'] }]
+                    datasets: [{ label: 'Investimento por Dispositivo', data, backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316'] }]
                 },
                 options: { plugins: { legend: { position: 'top', labels: { color: '#94a3b8' } } } }
             });
@@ -493,7 +568,8 @@
             structuredData.forEach(campaign => {
                 if (campaign.objective === 'OUTCOME_SALES' || campaign.objective === 'OUTCOME_LEADS') {
                     Object.values(campaign.adsets).forEach(adset => {
-                        if(adset.spend > 0) adsetsForChart.push({ x: adset.spend, y: adset.revenue / adset.spend, r: Math.sqrt(adset.purchases) * 3 + 3, label: adset.name });
+                        const roas = adset.spend > 0 ? adset.revenue / adset.spend : 0;
+                        if(adset.spend > 0) adsetsForChart.push({ x: adset.spend, y: roas, r: Math.sqrt(adset.purchases) * 3 + 4, label: adset.name });
                     });
                 }
             });
@@ -501,7 +577,7 @@
             activeCharts['roas-scatter-chart'] = new Chart(ctx, {
                 type: 'bubble',
                 data: { datasets: [{ label: 'Conjuntos de Anúncios', data: adsetsForChart, backgroundColor: 'rgba(79, 70, 229, 0.7)', borderColor: 'rgba(99, 102, 241, 1)' }] },
-                options: { scales: { x: { title: { display: true, text: 'Investimento (R$)', color: '#94a3b8' }, ticks: { color: '#94a3b8' } }, y: { title: { display: true, text: 'ROAS', color: '#94a3b8' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#94a3b8' } } } }
+                options: { scales: { x: { title: { display: true, text: 'Investimento (R$)', color: '#94a3b8' }, ticks: { color: '#94a3b8' } }, y: { title: { display: true, text: 'ROAS', color: '#94a3b8' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { callbacks: { label: (c) => `${c.raw.label}: (Invest: R$ ${c.raw.x.toFixed(2)}, ROAS: ${c.raw.y.toFixed(2)})` } } } }
             });
         }
 
@@ -534,20 +610,32 @@
                 renderAnalysisCards(await response.json());
             } catch (error) { showToast(`Erro ao gerar análise: ${error.message}`, 'error'); content.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao comunicar com o sistema. Tente novamente.</p>`; } finally { loading.classList.add('hidden'); btn.disabled = false; }
         }
-        function renderAnalysisCards(analysisData) { /* ... */ }
-        function displayStrategicPanels(structuredData, roasGoal, cpaGoal) { /* ... */ }
-        function confirmStatusChange(adsetId, adsetName, newStatus) { /* ... */ }
-        function updateAdsetStatus(adsetId, status) { /* ... */ }
-        function updateBudget(adsetId) { /* ... */ }
-        function closeModal() { /* ... */ }
-        function showToast(message, type = 'info') { /* ... */ }
-        // Implementações omitidas para brevidade, mas mantidas do código original.
-        getCampaignKPIsHTML = function(campaign) { /* ... */ };
-        renderCampaignsView = function(campaignsData) { /* ... */ };
-        displayStrategicPanels = function(structuredData, roasGoal, cpaGoal) {
+        
+        function renderAnalysisCards(analysisData) {
+            const container = document.getElementById('analysis-content');
+            const priorityMap = { 'Crítica': 'border-red-500', 'Alta': 'border-amber-500', 'Média': 'border-blue-500', 'Informativo': 'border-slate-600' };
+            container.innerHTML = analysisData.map(insight => `
+                <div class="bg-slate-800 rounded-lg p-5 border-l-4 ${priorityMap[insight.priority] || 'border-slate-500'}">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-lg font-bold text-slate-100">${insight.title}</h4>
+                        <span class="text-xs font-semibold px-2 py-1 rounded-full bg-slate-700 text-slate-300">${insight.priority}</span>
+                    </div>
+                    <p class="text-slate-400 mb-4 text-sm">${insight.diagnosis}</p>
+                    <div>
+                        <h5 class="font-bold text-slate-300 mb-2 text-sm">Plano de Ação Sugerido:</h5>
+                        <ul class="list-disc list-inside space-y-1 text-slate-400 text-sm">
+                            ${insight.action_plan.map(step => `<li>${step}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function displayStrategicPanels(structuredData, roasGoal, cpaGoal) {
             const escalaContent = document.getElementById('escala-content');
             const otimizaContent = document.getElementById('otimiza-content');
-            escalaContent.innerHTML = otimizaContent.innerHTML = '';
+            escalaContent.innerHTML = '';
+            otimizaContent.innerHTML = '';
             
             let salesAdsets = [];
             structuredData.forEach(c => {
@@ -558,16 +646,95 @@
             
             const sortedAdsets = salesAdsets.sort((a,b) => b.spend - a.spend);
 
+            let escalaCount = 0, otimizaCount = 0;
             sortedAdsets.forEach(data => {
                 if(data.spend === 0) return;
                 const roas = data.spend > 0 ? (data.revenue / data.spend) : 0;
                 const cpa = data.purchases > 0 ? (data.spend / data.purchases) : 0;
-                if (roas >= roasGoal && cpa > 0 && cpa <= cpaGoal) escalaContent.innerHTML += '...'; // Card HTML
-                else otimizaContent.innerHTML += '...'; // Card HTML
+                
+                const cardHtml = `<div class="adset-card border border-slate-700 p-4 rounded-lg bg-slate-800/50"><p class="font-bold text-slate-200 truncate pr-2" title="${data.name}">${data.name}</p><div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3"><span class="text-slate-400">ROAS: <span class="${getPerformanceColor(roas, roasGoal)} font-semibold">${roas.toFixed(2)}</span></span><span class="text-slate-400">CPA: <span class="${getPerformanceColor(cpa, cpaGoal, false)} font-semibold">R$ ${cpa.toFixed(2)}</span></span><span class="text-slate-400">Invest.: <span class="font-semibold text-slate-200">R$ ${data.spend.toFixed(2)}</span></span><span class="text-slate-400">Compras: <span class="font-semibold text-slate-200">${data.purchases}</span></span></div></div>`;
+
+                if (roas >= roasGoal && cpa > 0 && cpa <= cpaGoal) {
+                    escalaContent.innerHTML += cardHtml;
+                    escalaCount++;
+                } else {
+                    otimizaContent.innerHTML += cardHtml;
+                    otimizaCount++;
+                }
             });
-            if (escalaContent.innerHTML === '') escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads atingiu as metas para escalar.</p>';
-            if (otimizaContent.innerHTML === '') otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads a otimizar encontrado.</p>';
-        };
+
+            if (escalaCount === 0) escalaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads atingiu as metas para escalar.</p>';
+            if (otimizaCount === 0) otimizaContent.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum conjunto de Vendas/Leads a otimizar encontrado.</p>';
+        }
+
+        function confirmStatusChange(adsetId, adsetName, newStatus) {
+            const modal = document.getElementById('confirmation-modal');
+            const actionText = newStatus === 'PAUSED' ? 'pausar' : 'ativar';
+            document.getElementById('modal-title').innerText = `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Conjunto`;
+            document.getElementById('modal-body').innerText = `Tem certeza de que deseja ${actionText} o conjunto "${adsetName}"?`;
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.className = `px-4 py-2 text-white rounded-md ${newStatus === 'PAUSED' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`;
+            confirmBtn.innerText = 'Confirmar';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const confirmHandler = () => {
+                updateAdsetStatus(adsetId, newStatus);
+                closeModal();
+            };
+            
+            confirmBtn.addEventListener('click', confirmHandler, { once: true });
+            document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+                closeModal();
+                confirmBtn.removeEventListener('click', confirmHandler);
+            }, { once: true });
+        }
+
+        async function updateAdsetStatus(adsetId, status) {
+            try {
+                const res = await fetch('/.netlify/functions/api/update-adset-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: accessToken, adset_id: adsetId, status: status }) });
+                const result = await res.json();
+                if (result.success || result.id) {
+                    showToast(`Conjunto ${status === 'PAUSED' ? 'pausado' : 'ativado'} com sucesso!`, 'success');
+                    fetchAllData(accessToken);
+                } else {
+                    throw new Error(result.details?.error?.message || 'Falha ao atualizar o status.');
+                }
+            } catch (error) { showToast(`Erro: ${error.message}`, 'error'); }
+        }
+        
+        async function updateBudget(adsetId) {
+            const input = document.getElementById(`budget-${adsetId}`);
+            const newBudget = input.value;
+            try {
+                const res = await fetch('/.netlify/functions/api/update-adset-budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: accessToken, adset_id: adsetId, daily_budget: newBudget }) });
+                const result = await res.json();
+                 if (result.success || result.id) {
+                    showToast('Orçamento atualizado com sucesso!', 'success');
+                    input.blur();
+                } else {
+                    throw new Error(result.details?.error?.message || 'Falha ao atualizar o orçamento.');
+                }
+            } catch (error) { showToast(`Erro: ${error.message}`, 'error'); }
+        }
+        
+        function closeModal() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast-notification');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            toast.innerHTML = `<div class="${bgColor} text-white font-bold rounded-lg shadow-lg py-3 px-5">${message}</div>`;
+            toast.classList.remove('translate-x-full');
+            toast.classList.add('translate-x-0');
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0');
+                toast.classList.add('translate-x-full');
+            }, 4000);
+        }
     </script>
 </body>
 </html>
