@@ -163,8 +163,8 @@
                           </div>
                           <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-900/50 rounded-lg">
                             <div class="text-center">
-                              <p class="text-sm text-slate-400" title="Custo Direto + Variável + (Custo Fixo Mensal / Vendas Reais do Período)">Custo Total Real por Produto</p>
-                              <p class="text-2xl font-bold text-red-400" id="custo-total-produto-real">R$ 0.00</p>
+                              <p class="text-sm text-slate-400" title="Custo Direto + Variável + (Custo Fixo Mensal / Meta de Vendas)">Custo Total Unit. (Meta)</p>
+                              <p class="text-2xl font-bold text-red-400" id="custo-total-produto-meta">R$ 0.00</p>
                             </div>
                             <div class="text-center">
                               <p class="text-sm text-slate-400" title="ROAS necessário para pagar todos os custos (produto + ads), sem lucro.">ROAS Mínimo para Empatar</p>
@@ -193,7 +193,7 @@
                             <canvas id="roas-scatter-chart"></canvas>
                           </div>
                           <div class="chart-container">
-                            <h3 class="text-lg font-bold mb-4 text-slate-100">Top 5 Campanhas por Lucro</h3>
+                            <h3 class="text-lg font-bold mb-4 text-slate-100">Top 5 Campanhas por Lucro Real</h3>
                             <canvas id="campaign-ranking-chart"></canvas>
                           </div>
                         </div>
@@ -491,14 +491,13 @@
             
             // Seção 2: Cálculos baseados nas regras
             // Regra 1: Quantidade de Pares Vendidos
-            const qtdVendida = (overallMetrics.totalPurchases > 0) ? overallMetrics.totalPurchases : (precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : 0);
+            const qtdVendida = precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : (overallMetrics.totalPurchases || 0);
 
             // Regra 2: Custo Fixo Unitário (SEMPRE PELA META)
             const custoFixoUnitMeta = custosFixosMes / metaVendas;
 
-            // Custo Total por produto (baseado no real)
-            const custoFixoUnitReal = qtdVendida > 0 ? custosFixosMes / qtdVendida : 0; // Custo diluído real
-            const custoTotalProdutoReal = custoDireto + custoVariavel + custoFixoUnitReal;
+            // Custo Total por produto (baseado no real) - CORREÇÃO APLICADA AQUI
+            const custoTotalProdutoReal = custoDireto + custoVariavel + custoFixoUnitMeta; // Usa CFU da meta
 
             const ticketMedio = (overallMetrics.totalPurchases || 0) > 0 ? (overallMetrics.totalRevenue || 0) / overallMetrics.totalPurchases : precoMedioAssumido;
 
@@ -573,12 +572,17 @@
             const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
             const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
             const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
+            const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
+            const custoFixoUnitMeta = custosFixosMes / metaVendas;
 
-            const lucroLiquido = revenue - (qtdVendida * (custoDireto + custoVariavel)) - custosFixosMes;
+            // Fórmula do Lucro Corrigida
+            const lucroUnitarioReal = ticketMedio - (custoDireto + custoVariavel + custoFixoUnitMeta);
+            const lucroLiquido = lucroUnitarioReal * qtdVendida;
+
             const roasReal = spend > 0 ? lucroLiquido / spend : 0;
             const margemLiquida = revenue > 0 ? (lucroLiquido / revenue) * 100 : 0;
             
-            const cpaReal = qtdVendida > 0 ? (spend + (qtdVendida * (custoDireto + custoVariavel)) + custosFixosMes) / qtdVendida : 0;
+            const cpaReal = qtdVendida > 0 ? spend / qtdVendida : 0;
 
             const kpis = [
               { label: 'Invest. Médio Diário', value: formatCurrency(investimentoMedioDiario)},
@@ -588,7 +592,7 @@
               { label: '🎯 ROAS REAL', value: formatNumber(roasReal), isGood: roasReal >= roasIdeal, isCritical: true },
               { label: 'Margem Líquida', value: `${formatNumber(margemLiquida,1)}%`, color: getPerformanceColor(margemLiquida, 30) },
               { label: 'Pares Vendidos (Calc)', value: Math.round(qtdVendida) },
-              { label: 'CPA Real', value: formatCurrency(cpaReal) }
+              { label: 'CPA Real (Tráfego)', value: formatCurrency(cpaReal) }
             ];
 
             kpiGrid.innerHTML = kpis.map(kpi => {
@@ -710,10 +714,25 @@
         function createCampaignRankingChart(structuredData) {
             destroyChart('campaign-ranking-chart');
             const ctx = document.getElementById('campaign-ranking-chart').getContext('2d');
-            const salesCampaigns = structuredData.filter(c => c.objective === 'OUTCOME_SALES' && c.revenue > c.spend).map(c => ({ name: c.name, profit: c.revenue - c.spend })).sort((a, b) => b.profit - a.profit).slice(0, 5);
+            
+            const costConfig = updateCostCalculationsUI();
+            
+            const salesCampaigns = structuredData
+                .filter(c => c.objective === 'OUTCOME_SALES')
+                .map(c => {
+                    const qtdVendida = (c.purchases > 0) ? c.purchases : ((costConfig.precoMedioAssumido > 0) ? c.revenue / costConfig.precoMedioAssumido : 0);
+                    const custoFixoUnitMeta = (costConfig.metaVendas > 0) ? costConfig.custosFixosMes / costConfig.metaVendas : 0;
+                    const lucroUnitario = (costConfig.ticketMedio || costConfig.precoMedioAssumido) - (costConfig.custoDireto + costConfig.custoVariavel + custoFixoUnitMeta);
+                    const lucroReal = lucroUnitario * qtdVendida;
+                    return { name: c.name, profit: lucroReal };
+                })
+                .filter(c => c.profit > 0)
+                .sort((a, b) => b.profit - a.profit)
+                .slice(0, 5);
+
             activeCharts['campaign-ranking-chart'] = new Chart(ctx, {
                 type: 'bar',
-                data: { labels: salesCampaigns.map(c => c.name), datasets: [{ label: 'Lucro (R$)', data: salesCampaigns.map(c => c.profit), backgroundColor: ['rgba(34, 197, 94, 0.7)', 'rgba(59, 130, 246, 0.7)', 'rgba(99, 102, 241, 0.7)', 'rgba(139, 92, 246, 0.7)', 'rgba(168, 85, 247, 0.7)'] }] },
+                data: { labels: salesCampaigns.map(c => c.name), datasets: [{ label: 'Lucro Real (R$)', data: salesCampaigns.map(c => c.profit), backgroundColor: ['rgba(34, 197, 94, 0.7)', 'rgba(59, 130, 246, 0.7)', 'rgba(99, 102, 241, 0.7)', 'rgba(139, 92, 246, 0.7)', 'rgba(168, 85, 247, 0.7)'] }] },
                 options: { indexAxis: 'y', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
             });
         }
