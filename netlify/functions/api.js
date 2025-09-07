@@ -4,6 +4,8 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
+// Adicionado para permitir que o Express analise corpos de requisição JSON para as funções de update
+app.use(express.json());
 const router = express.Router();
 
 // --- Suas Configurações ---
@@ -23,9 +25,8 @@ router.get('/login', (req, res) => {
   const event = req.apiGateway.event;
   const baseUrl = getBaseUrl(event);
   const redirectUri = `${baseUrl}/.netlify/functions/api/callback`;
-  // Adicionando permissões para gerir campanhas e ler criativos
-  const scope = 'ads_read,read_insights,ads_management,business_management';
-  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&auth_type=rerequest`;
+  const scope = 'ads_read,read_insights,ads_management';
+  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${META_APP_ID}&redirect_uri=${redirectUri}&scope=${scope}&auth_type=rerequest`;
   res.redirect(authUrl);
 });
 
@@ -37,7 +38,7 @@ router.get('/callback', async (req, res) => {
   const redirectUri = `${baseUrl}/.netlify/functions/api/callback`;
 
   try {
-    const tokenResponse = await axios.get(`https://graph.facebook.com/v19.0/oauth/access_token`, {
+    const tokenResponse = await axios.get(`https://graph.facebook.com/v18.0/oauth/access_token`, {
       params: {
         client_id: META_APP_ID,
         redirect_uri: redirectUri,
@@ -58,7 +59,6 @@ const fetchAllPages = async (url, allData = []) => {
     const response = await axios.get(url);
     const data = response.data.data;
     allData.push(...data);
-
     if (response.data.paging && response.data.paging.next) {
       return await fetchAllPages(response.data.paging.next, allData);
     } else {
@@ -70,26 +70,27 @@ const fetchAllPages = async (url, allData = []) => {
   }
 };
 
-// Rota de Dados ATUALIZADA para buscar mais métricas e criativos
+// Rota de Dados CORRIGIDA
 router.get('/data', async (req, res) => {
   const { token, startDate, endDate } = req.query;
   if (!token) {
     return res.status(400).json({ error: 'Token de acesso é necessário.' });
   }
-  
+
   const time_range = JSON.stringify({
     since: startDate,
     until: endDate,
   });
 
   try {
-    // ATUALIZAÇÃO: Adicionamos 'effective_status', 'adset{daily_budget,effective_status}',
-    // 'ad_creative{thumbnail_url}' e as métricas 'ctr', 'cpm', 'cpc' e 'clicks'.
-    const fields = 'name,effective_status,campaign{name},adset{name,daily_budget,effective_status},insights{spend,impressions,clicks,ctr,cpm,cpc,actions,action_values},ad_creative{thumbnail_url}';
-    const initialUrl = `https://graph.facebook.com/v19.0/${AD_ACCOUNT_ID}/ads?access_token=${token}&fields=${fields}&time_range=${time_range}&limit=100`;
+    // **CORREÇÃO PRINCIPAL**: O `time_range` foi movido para dentro do campo `fields`
+    // e aplicado diretamente ao `insights`. Esta é a forma correta de pedir ao Facebook
+    // os dados de um período específico. O parâmetro `&time_range=` no final foi removido.
+    const fields = `name,campaign{name,effective_status},adset{name,effective_status,daily_budget},ad_creative{thumbnail_url},insights.time_range(${time_range}){spend,impressions,ctr,cpm,cpc,actions,action_values}`;
+    
+    const initialUrl = `https://graph.facebook.com/v18.0/${AD_ACCOUNT_ID}/ads?access_token=${token}&fields=${fields}&limit=100`;
     
     const allAdData = await fetchAllPages(initialUrl);
-
     res.json({ data: allAdData });
 
   } catch (error) {
@@ -98,41 +99,47 @@ router.get('/data', async (req, res) => {
   }
 });
 
+// Rota para ATUALIZAR STATUS do Conjunto de Anúncios
+router.post('/update-adset-status', async (req, res) => {
+  const { token, adset_id, status } = req.body;
+  if (!token || !adset_id || !status) {
+    return res.status(400).json({ error: 'Token, adset_id e status são necessários.' });
+  }
 
-// Rota para ATUALIZAR STATUS do Adset
-router.post('/update-adset-status', express.json(), async (req, res) => {
-    const { token, adset_id, status } = req.body;
-    if (!token || !adset_id || !status) {
-        return res.status(400).json({ error: 'Parâmetros em falta.' });
-    }
-    try {
-        const response = await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, {
-            params: { access_token: token, status: status }
-        });
-        res.json(response.data);
-    } catch (error) {
-        console.error('Erro ao atualizar status do adset:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Falha ao atualizar status.', details: error.response ? error.response.data : {} });
-    }
+  try {
+    const response = await axios.post(`https://graph.facebook.com/v18.0/${adset_id}`, null, {
+      params: {
+        access_token: token,
+        status: status,
+      },
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Erro ao atualizar status do conjunto:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Falha ao atualizar o status.', details: error.response ? error.response.data : {} });
+  }
 });
 
-// Rota para ATUALIZAR ORÇAMENTO do Adset
-router.post('/update-adset-budget', express.json(), async (req, res) => {
-    const { token, adset_id, daily_budget } = req.body;
-    if (!token || !adset_id || !daily_budget) {
-        return res.status(400).json({ error: 'Parâmetros em falta.' });
-    }
-    try {
-        // O orçamento é enviado em centavos, então multiplicamos por 100.
-        const budgetInCents = Math.round(parseFloat(daily_budget) * 100);
-        const response = await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, {
-            params: { access_token: token, daily_budget: budgetInCents }
-        });
-        res.json(response.data);
-    } catch (error) {
-        console.error('Erro ao atualizar orçamento do adset:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'Falha ao atualizar orçamento.', details: error.response ? error.response.data : {} });
-    }
+// Rota para ATUALIZAR ORÇAMENTO do Conjunto de Anúncios
+router.post('/update-adset-budget', async (req, res) => {
+  const { token, adset_id, daily_budget } = req.body;
+  if (!token || !adset_id || !daily_budget) {
+    return res.status(400).json({ error: 'Token, adset_id e daily_budget são necessários.' });
+  }
+
+  try {
+    const response = await axios.post(`https://graph.facebook.com/v18.0/${adset_id}`, null, {
+      params: {
+        access_token: token,
+        // O orçamento é enviado em centavos, então multiplicamos por 100
+        daily_budget: parseFloat(daily_budget) * 100,
+      },
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Erro ao atualizar orçamento do conjunto:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Falha ao atualizar o orçamento.', details: error.response ? error.response.data : {} });
+  }
 });
 
 
