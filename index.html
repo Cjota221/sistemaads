@@ -129,7 +129,12 @@
                         <!-- SEÇÃO DE CUSTOS CORRIGIDA -->
                         <div class="bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-700" id="cost-config-section">
                           <h3 class="text-lg font-bold text-slate-100 mb-4">⚙️ Configuração de Custos do Negócio</h3>
-                          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                              <label class="block text-sm font-medium text-slate-400">Preço Médio de Venda (R$)</label>
+                              <input type="number" id="preco-medio-venda-assumido" value="35.00" step="0.50" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 35.00">
+                              <p class="text-xs text-slate-500 mt-1">Seu preço de venda por par</p>
+                            </div>
                             <div>
                               <label class="block text-sm font-medium text-slate-400">Custo Direto Unitário</label>
                               <input type="number" id="custo-direto-unitario" value="17.73" step="0.01" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 17.73">
@@ -151,7 +156,7 @@
                               <p class="text-xs text-slate-500 mt-1">Unidades projetadas</p>
                             </div>
                              <div>
-                              <label class="block text-sm font-medium text-slate-400">Lucro Líquido por Par (Meta)</label>
+                              <label class="block text-sm font-medium text-slate-400">Lucro por Par (Meta)</label>
                               <input type="number" id="lucro-liquido-par-meta" value="7.00" step="0.50" class="cost-input mt-1 block w-full rounded-md shadow-sm text-sm dark-input" placeholder="Ex: 7.00">
                               <p class="text-xs text-slate-500 mt-1">Lucro desejado por venda</p>
                             </div>
@@ -162,11 +167,11 @@
                               <p class="text-2xl font-bold text-red-400" id="custo-total-produto-real">R$ 0.00</p>
                             </div>
                             <div class="text-center">
-                              <p class="text-sm text-slate-400" title="ROAS necessário para pagar todos os custos (produto + ads), sem lucro. Depende do Ticket Médio do período.">ROAS Mínimo para Empatar</p>
+                              <p class="text-sm text-slate-400" title="ROAS necessário para pagar todos os custos (produto + ads), sem lucro.">ROAS Mínimo para Empatar</p>
                               <p class="text-2xl font-bold text-yellow-400" id="roas-minimo-empate">0.0</p>
                             </div>
                             <div class="text-center">
-                              <p class="text-sm text-slate-400" title="ROAS necessário para atingir sua meta de lucro por venda. Depende do Ticket Médio do período.">ROAS Ideal (Meta Lucro)</p>
+                              <p class="text-sm text-slate-400" title="ROAS necessário para atingir sua meta de lucro por venda.">ROAS Ideal (Meta Lucro)</p>
                               <p class="text-2xl font-bold text-green-400" id="roas-ideal">0.0</p>
                             </div>
                           </div>
@@ -476,32 +481,35 @@
         }
 
         function updateCostCalculationsUI() {
+            const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 0;
             const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
             const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
             const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
             const metaVendas = parseFloat(document.getElementById('meta-vendas-mes').value) || 1;
             const lucroMeta = parseFloat(document.getElementById('lucro-liquido-par-meta').value) || 0;
+            
+            const qtdVendida = precoMedioAssumido > 0 ? (overallMetrics.totalRevenue || 0) / precoMedioAssumido : (overallMetrics.totalPurchases || 0);
 
-            const custoFixoUnitReal = (overallMetrics.totalPurchases || 0) > 0 ? custosFixosMes / overallMetrics.totalPurchases : custosFixosMes;
+            const custoFixoUnitReal = qtdVendida > 0 ? custosFixosMes / qtdVendida : custosFixosMes;
             const custoTotalProdutoReal = custoDireto + custoVariavel + custoFixoUnitReal;
             
-            const avgPrice = (overallMetrics.totalPurchases || 0) > 0 ? (overallMetrics.totalRevenue || 0) / overallMetrics.totalPurchases : 0;
+            const ticketMedio = (overallMetrics.totalPurchases || 0) > 0 ? (overallMetrics.totalRevenue || 0) / overallMetrics.totalPurchases : precoMedioAssumido;
             
             let roasMinimo = 0;
-            if (avgPrice > 0) {
+            if (ticketMedio > 0) {
                 const custoFixoUnitMeta = custosFixosMes / metaVendas;
                 const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
-                const cpaBreakeven = avgPrice - custoTotalProdutoMeta;
-                if (cpaBreakeven > 0) roasMinimo = avgPrice / cpaBreakeven;
+                const cpaBreakeven = ticketMedio - custoTotalProdutoMeta;
+                if (cpaBreakeven > 0) roasMinimo = ticketMedio / cpaBreakeven;
             }
             
             let roasIdeal = 0;
-            if (avgPrice > 0) {
-                 const custoFixoUnitMeta = custosFixosMes / metaVendas;
+            if (ticketMedio > 0) {
+                const custoFixoUnitMeta = custosFixosMes / metaVendas;
                 const custoTotalProdutoMeta = custoDireto + custoVariavel + custoFixoUnitMeta;
-                const cpaIdealParaLucro = avgPrice - custoTotalProdutoMeta - lucroMeta;
+                const cpaIdealParaLucro = ticketMedio - custoTotalProdutoMeta - lucroMeta;
                 if (cpaIdealParaLucro > 0) {
-                    roasIdeal = avgPrice / cpaIdealParaLucro;
+                    roasIdeal = ticketMedio / cpaIdealParaLucro;
                 }
             }
 
@@ -509,8 +517,9 @@
             document.getElementById('roas-minimo-empate').textContent = formatNumber(roasMinimo, 1);
             document.getElementById('roas-ideal').textContent = formatNumber(roasIdeal, 1);
 
-            return { custoTotalProdutoReal, roasMinimo, roasIdeal };
+            return { custoTotalProdutoReal, roasMinimo, roasIdeal, qtdVendida };
         }
+
 
         function setDefaultDates() {
              const endDate = new Date(), startDate = new Date();
@@ -542,20 +551,27 @@
             const kpiGrid = document.getElementById('kpi-grid');
             kpiGrid.innerHTML = '';
             const { spend, revenue, purchases, roas, roasGoal } = kpiData;
-            const { custoTotalProdutoReal, roasIdeal } = costConfig;
+            const { custoTotalProdutoReal, roasIdeal, qtdVendida } = costConfig;
             
             const startDate = new Date(document.getElementById('start-date').value + 'T00:00:00Z');
             const endDate = new Date(document.getElementById('end-date').value + 'T23:59:59Z');
             const diffTime = Math.abs(endDate - startDate);
             const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
             const investimentoMedioDiario = spend / diffDays;
-            const ticketMedio = purchases > 0 ? revenue / purchases : 0;
+            
+            const precoMedioAssumido = parseFloat(document.getElementById('preco-medio-venda-assumido').value) || 0;
+            const ticketMedio = purchases > 0 ? revenue / purchases : precoMedioAssumido;
+            
+            const custoDireto = parseFloat(document.getElementById('custo-direto-unitario').value) || 0;
+            const custoVariavel = parseFloat(document.getElementById('custo-variavel-unitario').value) || 0;
+            const custosFixosMes = parseFloat(document.getElementById('custos-fixos-mes').value) || 0;
 
-            const custoTotalProdutos = purchases * custoTotalProdutoReal;
-            const lucroLiquido = revenue - custoTotalProdutos;
+            const lucroLiquido = revenue - (qtdVendida * (custoDireto + custoVariavel)) - custosFixosMes;
             const roasReal = spend > 0 ? lucroLiquido / spend : 0;
             const margemLiquida = revenue > 0 ? (lucroLiquido / revenue) * 100 : 0;
-            const cpaReal = purchases > 0 ? (spend + custoTotalProdutos) / purchases : 0;
+            
+            const custoTotalProdutos = qtdVendida * custoTotalProdutoReal;
+            const cpaReal = qtdVendida > 0 ? (spend + custoTotalProdutos) / qtdVendida : 0;
 
             const kpis = [
               { label: 'Invest. Médio Diário', value: formatCurrency(investimentoMedioDiario)},
@@ -564,9 +580,8 @@
               { label: 'Lucro Líquido Real', value: formatCurrency(lucroLiquido), color: getPerformanceColor(lucroLiquido, 1) },
               { label: '🎯 ROAS REAL', value: formatNumber(roasReal), isGood: roasReal >= roasIdeal, isCritical: true },
               { label: 'Margem Líquida', value: `${formatNumber(margemLiquida,1)}%`, color: getPerformanceColor(margemLiquida, 30) },
-              { label: 'Compras', value: purchases || 0 },
-              { label: 'CPA Real', value: formatCurrency(cpaReal) },
-              { label: 'Custo Total Produtos', value: formatCurrency(custoTotalProdutos), subtitle: `${purchases} × ${formatCurrency(custoTotalProdutoReal)}` }
+              { label: 'Pares Vendidos (Calc)', value: Math.round(qtdVendida) },
+              { label: 'CPA Real', value: formatCurrency(cpaReal) }
             ];
 
             kpiGrid.innerHTML = kpis.map(kpi => {
