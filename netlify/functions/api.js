@@ -10,7 +10,6 @@ const router = express.Router();
 const META_APP_ID = process.env.META_APP_ID;
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const AD_ACCOUNT_ID = process.env.AD_ACCOUNT_ID;
-// A chave da API da IA será gerida pelo ambiente de execução, não por uma variável de ambiente.
 
 const getBaseUrl = (event) => {
   const headers = event.headers;
@@ -76,10 +75,17 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// --- ROTA DE ANÁLISE IA (CORRIGIDA) ---
+// --- ROTA DE ANÁLISE IA (REVISADA E CORRIGIDA) ---
 router.post('/analyze', async (req, res) => {
     const { userGoals, campaignData } = req.body;
-    // Removida a verificação da chave de API que causava o erro.
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+    // Verificação explícita da chave de API
+    if (!GEMINI_API_KEY) {
+        // Retorna um erro claro se a chave não estiver configurada no ambiente
+        return res.status(500).json({ error: 'A variável de ambiente GEMINI_API_KEY não está configurada no servidor. Por favor, adicione-a nas configurações do seu projeto Netlify.' });
+    }
+
     if (!userGoals || !campaignData) {
         return res.status(400).json({ error: 'Metas do utilizador e dados de campanha são necessários.' });
     }
@@ -100,8 +106,8 @@ router.post('/analyze', async (req, res) => {
     `;
 
     try {
-        // A URL agora termina com 'key=' para que o ambiente de execução injete a chave automaticamente.
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=`;
+        // A URL agora usa a chave de API da variável de ambiente.
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
         
         const payload = {
             contents: [{
@@ -116,6 +122,11 @@ router.post('/analyze', async (req, res) => {
         };
 
         const geminiResponse = await axios.post(geminiUrl, payload);
+        
+        if (!geminiResponse.data.candidates || !geminiResponse.data.candidates[0].content.parts[0].text) {
+             throw new Error("A resposta da IA não continha o conteúdo esperado.");
+        }
+        
         const responseText = geminiResponse.data.candidates[0].content.parts[0].text;
         
         const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
