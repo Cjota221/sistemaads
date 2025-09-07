@@ -183,6 +183,8 @@
             }
             setupNavigation();
             setupAutomaticAnalysis();
+            // **CORREÇÃO**: A função do accordion agora é iniciada uma única vez aqui.
+            setupAccordions(); 
         };
 
         function setupAutomaticAnalysis() {
@@ -254,7 +256,6 @@
 
                     document.getElementById('loading-state').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
-                    setupAccordions();
                 })
                 .catch(error => {
                     document.getElementById('loading-state').classList.add('hidden');
@@ -284,16 +285,24 @@
             });
         }
         
+        // **FUNÇÃO CORRIGIDA**
+        // Agora, em vez de procurar os botões e adicionar um evento a cada um,
+        // adicionamos um único evento ao corpo do documento (event delegation).
+        // Ele "ouve" todos os cliques e só age se o clique foi em um botão de accordion.
         function setupAccordions() {
             document.body.addEventListener('click', function(event) {
                 const trigger = event.target.closest('[data-accordion-trigger]');
                 if (trigger) {
                     const content = trigger.nextElementSibling;
                     const icon = trigger.querySelector('svg.transition-transform');
+                    
+                    // Verifica se o accordion já está aberto
                     if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                        // Se estiver aberto, fecha-o
                         content.style.maxHeight = null;
                         if(icon) icon.style.transform = 'rotate(0deg)';
                     } else {
+                        // Se estiver fechado, abre-o
                         content.style.maxHeight = content.scrollHeight + "px";
                         if(icon) icon.style.transform = 'rotate(180deg)';
                     }
