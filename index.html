@@ -33,6 +33,27 @@
             border-color: #4f46e5; /* indigo-600 */
             ring: #4f46e5;
         }
+        /* Novo container para o conteúdo com scroll */
+        .inner-scroll-container {
+            max-height: 65vh; /* Limita a altura a 65% da altura da janela de visualização */
+            overflow-y: auto; /* Adiciona a barra de rolagem vertical apenas quando necessário */
+            padding-right: 8px;
+        }
+        /* Estilização da barra de rolagem para um visual integrado ao tema escuro */
+        .inner-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .inner-scroll-container::-webkit-scrollbar-track {
+            background: #1e293b; /* slate-800 */
+        }
+        .inner-scroll-container::-webkit-scrollbar-thumb {
+            background-color: #475569; /* slate-600 */
+            border-radius: 4px;
+            border: 2px solid #1e293b;
+        }
+        .inner-scroll-container::-webkit-scrollbar-thumb:hover {
+            background-color: #64748b; /* slate-500 */
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-300">
@@ -319,7 +340,7 @@
                 }).join('');
                 const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
                 const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
-                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaignName}</h3><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Investimento</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.spend.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Receita</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.revenue.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">ROAS</p><p class="text-lg sm:text-2xl font-bold ${campaignRoas >= roasGoal ? 'text-green-400' : 'text-red-400'}">${campaignRoas.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">CPA</p><p class="text-lg sm:text-2xl font-bold ${campaignCpa > 0 && campaignCpa <= cpaGoal ? 'text-green-400' : 'text-red-400'}">R$ ${campaignCpa.toFixed(2)}</p></div></div></button><div data-accordion-content class="p-4 md:p-6 bg-slate-800/50 border-t border-slate-700 space-y-4">${adsetsHtml}</div></div>`;
+                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaignName}</h3><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Investimento</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.spend.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Receita</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.revenue.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">ROAS</p><p class="text-lg sm:text-2xl font-bold ${campaignRoas >= roasGoal ? 'text-green-400' : 'text-red-400'}">${campaignRoas.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">CPA</p><p class="text-lg sm:text-2xl font-bold ${campaignCpa > 0 && campaignCpa <= cpaGoal ? 'text-green-400' : 'text-red-400'}">R$ ${campaignCpa.toFixed(2)}</p></div></div></button><div data-accordion-content class="bg-slate-800/50 border-t border-slate-700"><div class="inner-scroll-container p-4 md:p-6 space-y-4">${adsetsHtml}</div></div></div>`;
             }).join('');
             container.innerHTML = campaignCardsHtml;
         }
