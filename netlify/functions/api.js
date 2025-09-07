@@ -78,13 +78,9 @@ router.get('/data', async (req, res) => {
 // --- ROTA DE ANÁLISE IA (REVISADA E CORRIGIDA) ---
 router.post('/analyze', async (req, res) => {
     const { userGoals, campaignData } = req.body;
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-    // Verificação explícita da chave de API
-    if (!GEMINI_API_KEY) {
-        // Retorna um erro claro se a chave não estiver configurada no ambiente
-        return res.status(500).json({ error: 'A variável de ambiente GEMINI_API_KEY não está configurada no servidor. Por favor, adicione-a nas configurações do seu projeto Netlify.' });
-    }
+    // Define a chave de API como uma string vazia.
+    // O ambiente de execução irá substituí-la pela chave correta automaticamente.
+    const GEMINI_API_KEY = '';
 
     if (!userGoals || !campaignData) {
         return res.status(400).json({ error: 'Metas do utilizador e dados de campanha são necessários.' });
@@ -106,7 +102,7 @@ router.post('/analyze', async (req, res) => {
     `;
 
     try {
-        // A URL agora usa a chave de API da variável de ambiente.
+        // A URL agora usa a chave de API que será preenchida pelo ambiente.
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
         
         const payload = {
