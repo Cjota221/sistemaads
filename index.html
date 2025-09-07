@@ -84,11 +84,17 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" /></svg>
                     Campanhas
                 </a>
+                <!-- NOVO BOTÃO DE NAVEGAÇÃO -->
+                <a href="#analysis" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                    Análise IA
+                </a>
             </nav>
         </aside>
 
         <main class="flex-1 p-6 md:p-10 overflow-y-auto">
             <div id="views-container">
+                <!-- VIEW DO DASHBOARD -->
                 <div id="dashboard-view">
                      <header class="text-left mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Dashboard Estratégico</h2>
@@ -135,7 +141,8 @@
                         </div>
                     </div>
                 </div>
-
+                
+                <!-- VIEW DAS CAMPANHAS -->
                 <div id="campaigns-view" class="hidden">
                     <header class="text-left mb-10">
                         <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Gestão de Campanhas</h2>
@@ -143,6 +150,28 @@
                     </header>
                     <div id="campaigns-content" class="space-y-6"></div>
                 </div>
+
+                <!-- NOVA VIEW DE ANÁLISE IA -->
+                <div id="analysis-view" class="hidden">
+                    <header class="text-left mb-10">
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-100">Análise e Recomendações da IA</h2>
+                        <p class="text-slate-400 mt-1">Ações sugeridas por CJ-AI para otimizar os seus resultados.</p>
+                    </header>
+                    <div class="text-center mb-8">
+                        <button id="generate-analysis-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                            Gerar Novo Plano de Ação
+                        </button>
+                    </div>
+                    <div id="analysis-loading-state" class="hidden text-center py-10">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-400 mx-auto"></div>
+                        <p class="mt-4 text-lg font-medium text-slate-400">CJ-AI está a analisar os seus dados...</p>
+                        <p class="text-sm text-slate-500">Isto pode levar alguns segundos.</p>
+                    </div>
+                    <div id="analysis-content" class="space-y-5">
+                        <!-- Os Cartões de Insights serão renderizados aqui -->
+                    </div>
+                </div>
+
             </div>
 
             <div id="loading-state" class="hidden text-center py-20">
@@ -158,6 +187,7 @@
 
     <script>
         let rawAdData = [];
+        let structuredCampaignData = []; // Para guardar os dados formatados para a IA
         let accessToken = null;
 
         window.onload = function () {
@@ -183,8 +213,8 @@
             }
             setupNavigation();
             setupAutomaticAnalysis();
-            // **CORREÇÃO**: A função do accordion agora é iniciada uma única vez aqui.
             setupAccordions(); 
+            document.getElementById('generate-analysis-btn').addEventListener('click', triggerAnalysis);
         };
 
         function setupAutomaticAnalysis() {
@@ -199,7 +229,6 @@
             
             const reprocessVisuals = () => {
                 if(rawAdData.length > 0) {
-                    // Re-processa ambos os painéis que dependem das metas
                     processAndDisplayDashboard(rawAdData);
                     processAndDisplayCampaigns(rawAdData);
                 }
@@ -227,6 +256,7 @@
             document.getElementById('loading-state').classList.remove('hidden');
             document.getElementById('dashboard-content').classList.add('hidden');
             document.getElementById('campaigns-view').classList.add('hidden');
+            document.getElementById('analysis-view').classList.add('hidden');
             document.getElementById('error-container').classList.add('hidden');
             
             const startDate = document.getElementById('start-date').value;
@@ -252,7 +282,11 @@
                     rawAdData = data.data;
                     
                     processAndDisplayDashboard(rawAdData);
-                    processAndDisplayCampaigns(rawAdData);
+                    // Processa e guarda os dados estruturados para a IA
+                    structuredCampaignData = structureDataForAI(rawAdData);
+                    // Usa os dados estruturados para renderizar a view de campanhas
+                    renderCampaignsView(structuredCampaignData);
+
 
                     document.getElementById('loading-state').classList.add('hidden');
                     document.getElementById('dashboard-content').classList.remove('hidden');
@@ -280,29 +314,22 @@
 
                     document.getElementById('dashboard-view').classList.add('hidden');
                     document.getElementById('campaigns-view').classList.add('hidden');
+                    document.getElementById('analysis-view').classList.add('hidden');
                     document.getElementById(`${targetId}-view`).classList.remove('hidden');
                 });
             });
         }
         
-        // **FUNÇÃO CORRIGIDA**
-        // Agora, em vez de procurar os botões e adicionar um evento a cada um,
-        // adicionamos um único evento ao corpo do documento (event delegation).
-        // Ele "ouve" todos os cliques e só age se o clique foi em um botão de accordion.
         function setupAccordions() {
             document.body.addEventListener('click', function(event) {
                 const trigger = event.target.closest('[data-accordion-trigger]');
                 if (trigger) {
                     const content = trigger.nextElementSibling;
                     const icon = trigger.querySelector('svg.transition-transform');
-                    
-                    // Verifica se o accordion já está aberto
                     if (content.style.maxHeight && content.style.maxHeight !== '0px') {
-                        // Se estiver aberto, fecha-o
                         content.style.maxHeight = null;
                         if(icon) icon.style.transform = 'rotate(0deg)';
                     } else {
-                        // Se estiver fechado, abre-o
                         content.style.maxHeight = content.scrollHeight + "px";
                         if(icon) icon.style.transform = 'rotate(180deg)';
                     }
@@ -310,59 +337,173 @@
             });
         }
         
-        function processAndDisplayCampaigns(data) {
+        function structureDataForAI(data) {
             const campaigns = {};
             data.forEach(ad => {
                 if (!ad.campaign || !ad.insights?.data?.[0]) return;
-                const campaignName = ad.campaign.name;
-                const adsetName = ad.adset.name;
-                const adName = ad.name;
+
                 const insights = ad.insights.data[0];
-                if (!campaigns[campaignName]) campaigns[campaignName] = { spend: 0, purchases: 0, revenue: 0, adsets: {} };
-                if (!campaigns[campaignName].adsets[adsetName]) campaigns[campaignName].adsets[adsetName] = { spend: 0, purchases: 0, revenue: 0, ads: [] };
                 const spend = parseFloat(insights.spend || 0);
                 const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
                 const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
-                campaigns[campaignName].spend += spend;
-                campaigns[campaignName].purchases += purchases;
-                campaigns[campaignName].revenue += revenue;
-                const adset = campaigns[campaignName].adsets[adsetName];
-                adset.spend += spend;
-                adset.purchases += purchases;
-                adset.revenue += revenue;
-                adset.ads.push({ name: adName, spend, purchases, revenue, ctr: parseFloat(insights.ctr || 0), cpc: parseFloat(insights.cpc || 0), thumbnail_url: ad.ad_creative?.thumbnail_url });
+                const roas = spend > 0 ? (revenue / spend) : 0;
+                const cpa = purchases > 0 ? (spend / purchases) : 0;
+
+                const campaignName = ad.campaign.name;
+                if (!campaigns[campaignName]) {
+                    campaigns[campaignName] = { name: campaignName, spend: 0, purchases: 0, revenue: 0, roas: 0, cpa: 0, adsets: {} };
+                }
+
+                const adsetName = ad.adset.name;
+                if (!campaigns[campaignName].adsets[adsetName]) {
+                    campaigns[campaignName].adsets[adsetName] = { name: adsetName, spend: 0, purchases: 0, revenue: 0, roas: 0, cpa: 0, ads: [] };
+                }
+                
+                const adData = {
+                    name: ad.name,
+                    spend,
+                    purchases,
+                    revenue,
+                    roas,
+                    cpa,
+                    ctr: parseFloat(insights.ctr || 0),
+                    cpm: parseFloat(insights.cpm || 0),
+                    cpc: parseFloat(insights.cpc || 0),
+                    thumbnail_url: ad.ad_creative?.thumbnail_url
+                };
+
+                campaigns[campaignName].adsets[adsetName].ads.push(adData);
             });
-            renderCampaignsView(campaigns);
+            
+            // Agrega os valores para conjuntos e campanhas
+            Object.values(campaigns).forEach(campaign => {
+                Object.values(campaign.adsets).forEach(adset => {
+                    adset.ads.forEach(ad => {
+                        adset.spend += ad.spend;
+                        adset.purchases += ad.purchases;
+                        adset.revenue += ad.revenue;
+                    });
+                    adset.roas = adset.spend > 0 ? (adset.revenue / adset.spend) : 0;
+                    adset.cpa = adset.purchases > 0 ? (adset.spend / adset.purchases) : 0;
+
+                    campaign.spend += adset.spend;
+                    campaign.purchases += adset.purchases;
+                    campaign.revenue += adset.revenue;
+                });
+                campaign.roas = campaign.spend > 0 ? (campaign.revenue / campaign.spend) : 0;
+                campaign.cpa = campaign.purchases > 0 ? (campaign.spend / campaign.purchases) : 0;
+            });
+
+            return Object.values(campaigns);
         }
 
-        function renderCampaignsView(campaigns) {
+        function renderCampaignsView(campaignsData) {
             const container = document.getElementById('campaigns-content');
             container.innerHTML = '';
-            if (Object.keys(campaigns).length === 0) {
+            if (campaignsData.length === 0) {
                 container.innerHTML = '<p class="text-slate-500 text-center py-10">Nenhuma campanha encontrada no período selecionado.</p>';
                 return;
             }
-            const campaignCardsHtml = Object.entries(campaigns).map(([campaignName, campaign]) => {
-                const campaignRoas = campaign.spend > 0 ? (campaign.revenue / campaign.spend) : 0;
-                const campaignCpa = campaign.purchases > 0 ? (campaign.spend / campaign.purchases) : 0;
-                const adsetsHtml = Object.entries(campaign.adsets).map(([adsetName, adset]) => {
-                    const adsetRoas = adset.spend > 0 ? (adset.revenue / adset.spend) : 0;
-                    const adsetCpa = adset.purchases > 0 ? (adset.spend / adset.purchases) : 0;
+            const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
+            const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
+
+            const campaignCardsHtml = campaignsData.map(campaign => {
+                const adsetsHtml = Object.values(campaign.adsets).map(adset => {
                     const adsHtml = adset.ads.map(ad => {
-                        const adRoas = ad.spend > 0 ? (ad.revenue / ad.spend) : 0;
                         const creativeHtml = ad.thumbnail_url 
                             ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
                             : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
-                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">R$ ${ad.spend.toFixed(2)}</span></p><p>Compras: <span class="font-bold text-slate-200">${ad.purchases}</span></p><p>ROAS: <span class="font-bold text-slate-200">${adRoas.toFixed(2)}</span></p><p>CTR: <span class="font-bold text-slate-200">${ad.ctr.toFixed(2)}%</span></p></div></div></div>`;
+                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">R$ ${ad.spend.toFixed(2)}</span></p><p>Compras: <span class="font-bold text-slate-200">${ad.purchases}</span></p><p>ROAS: <span class="font-bold text-slate-200">${ad.roas.toFixed(2)}</span></p><p>CTR: <span class="font-bold text-slate-200">${ad.ctr.toFixed(2)}%</span></p></div></div></div>`;
                     }).join('');
-                    return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adsetName}</p><div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-1"><span>Invest.: <span class="font-semibold text-slate-300">R$ ${adset.spend.toFixed(2)}</span></span><span>ROAS: <span class="font-semibold text-slate-300">${adsetRoas.toFixed(2)}</span></span><span>CPA: <span class="font-semibold text-slate-300">R$ ${adsetCpa.toFixed(2)}</span></span></div></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
+                    return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adset.name}</p><div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400 mt-1"><span>Invest.: <span class="font-semibold text-slate-300">R$ ${adset.spend.toFixed(2)}</span></span><span>ROAS: <span class="font-semibold text-slate-300">${adset.roas.toFixed(2)}</span></span><span>CPA: <span class="font-semibold text-slate-300">R$ ${adset.cpa.toFixed(2)}</span></span></div></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
                 }).join('');
-                const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
-                const cpaGoal = parseFloat(document.getElementById('cpa-goal').value) || 30.0;
-                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaignName}</h3><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Investimento</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.spend.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Receita</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.revenue.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">ROAS</p><p class="text-lg sm:text-2xl font-bold ${campaignRoas >= roasGoal ? 'text-green-400' : 'text-red-400'}">${campaignRoas.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">CPA</p><p class="text-lg sm:text-2xl font-bold ${campaignCpa > 0 && campaignCpa <= cpaGoal ? 'text-green-400' : 'text-red-400'}">R$ ${campaignCpa.toFixed(2)}</p></div></div></button><div data-accordion-content class="bg-slate-800/50 border-t border-slate-700"><div class="inner-scroll-container p-4 md:p-6 space-y-4">${adsetsHtml}</div></div></div>`;
+                return `<div class="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700"><button data-accordion-trigger class="w-full p-6 text-left bg-slate-800 hover:bg-slate-700/50 transition-colors duration-200"><div class="flex justify-between items-start"><h3 class="text-xl font-extrabold text-slate-100 pr-4">${campaign.name}</h3><div class="flex items-center gap-2 flex-shrink-0"><span class="text-sm text-slate-400 hidden sm:inline">Ver detalhes</span><svg class="w-6 h-6 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div></div><div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Investimento</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.spend.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">Receita</p><p class="text-lg sm:text-2xl font-bold text-slate-100">R$ ${campaign.revenue.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">ROAS</p><p class="text-lg sm:text-2xl font-bold ${campaign.roas >= roasGoal ? 'text-green-400' : 'text-red-400'}">${campaign.roas.toFixed(2)}</p></div><div class="p-2 rounded-lg bg-slate-700/70 text-center"><p class="text-xs sm:text-sm text-slate-400 font-medium">CPA</p><p class="text-lg sm:text-2xl font-bold ${campaign.cpa > 0 && campaign.cpa <= cpaGoal ? 'text-green-400' : 'text-red-400'}">R$ ${campaign.cpa.toFixed(2)}</p></div></div></button><div data-accordion-content class="bg-slate-800/50 border-t border-slate-700"><div class="inner-scroll-container p-4 md:p-6 space-y-4">${adsetsHtml}</div></div></div>`;
             }).join('');
             container.innerHTML = campaignCardsHtml;
         }
+
+        // --- LÓGICA DA ANÁLISE IA ---
+        
+        async function triggerAnalysis() {
+            if (rawAdData.length === 0) {
+                showToast('Não há dados para analisar. Por favor, verifique o período.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('generate-analysis-btn');
+            const loading = document.getElementById('analysis-loading-state');
+            const content = document.getElementById('analysis-content');
+
+            btn.disabled = true;
+            content.innerHTML = '';
+            loading.classList.remove('hidden');
+
+            const userGoals = {
+                roasGoal: parseFloat(document.getElementById('roas-goal').value),
+                cpaGoal: parseFloat(document.getElementById('cpa-goal').value),
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userGoals: userGoals,
+                        campaignData: structuredCampaignData
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`A API de análise respondeu com status ${response.status}: ${errorText}`);
+                }
+                
+                const analysisResult = await response.json();
+                renderAnalysisCards(analysisResult);
+
+            } catch (error) {
+                showToast(`Erro ao gerar análise: ${error.message}`, 'error');
+                content.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao comunicar com a IA. Tente novamente.</p>`;
+            } finally {
+                loading.classList.add('hidden');
+                btn.disabled = false;
+            }
+        }
+
+        function renderAnalysisCards(analysisData) {
+            const container = document.getElementById('analysis-content');
+            if (!analysisData || analysisData.length === 0) {
+                container.innerHTML = `<p class="text-slate-400 text-center">CJ-AI não encontrou recomendações específicas para o período selecionado.</p>`;
+                return;
+            }
+            
+            const priorityStyles = {
+                'Alta': { bg: 'bg-red-900/50', border: 'border-red-500', text: 'text-red-300' },
+                'Média': { bg: 'bg-yellow-900/50', border: 'border-yellow-500', text: 'text-yellow-300' },
+                'Baixa': { bg: 'bg-sky-900/50', border: 'border-sky-500', text: 'text-sky-300' }
+            };
+
+            container.innerHTML = analysisData.map(card => {
+                const styles = priorityStyles[card.priority] || priorityStyles['Média'];
+                const actionPlanHtml = card.action_plan.map(item => `<li class="flex items-start"><span class="mr-2 text-indigo-400">&#10148;</span><span>${item}</span></li>`).join('');
+                
+                return `
+                    <div class="insight-card ${styles.bg} border ${styles.border} p-6 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-lg font-bold text-slate-100">${card.title}</h4>
+                            <span class="text-sm font-semibold px-3 py-1 ${styles.bg} ${styles.text} rounded-full">${card.priority}</span>
+                        </div>
+                        <p class="text-slate-400 mb-4">${card.diagnosis}</p>
+                        <div>
+                            <h5 class="font-semibold text-slate-300 mb-2">Plano de Ação:</h5>
+                            <ul class="space-y-1 text-slate-300 list-inside">${actionPlanHtml}</ul>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // --- FUNÇÕES EXISTENTES ---
         
         function processAndDisplayDashboard(data) {
             const roasGoal = parseFloat(document.getElementById('roas-goal').value) || 6.0;
