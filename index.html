@@ -324,7 +324,7 @@
                 const impressions = parseInt(insights.impressions || 0);
 
                 const adData = {
-                    name: ad.name, spend, purchases, revenue, conversations, clicks, reach, frequency,
+                    name: ad.name, spend, purchases, revenue, conversations, clicks, reach, frequency, impressions,
                     roas: spend > 0 ? (revenue / spend) : 0,
                     cpa: purchases > 0 ? (spend / purchases) : 0,
                     costPerConv: conversations > 0 ? (spend / conversations) : 0,
@@ -344,13 +344,15 @@
                         adset.conversations += ad.conversations; adset.clicks += ad.clicks; adset.reach += ad.reach;
                         adset.impressions += (ad.impressions || 0);
                     });
-                     if(adset.impressions > 0) adset.frequency = adset.impressions / adset.reach;
+                     if(adset.impressions > 0 && adset.reach > 0) adset.frequency = adset.impressions / adset.reach;
                      
                     campaign.spend += adset.spend; campaign.purchases += adset.purchases; campaign.revenue += adset.revenue;
-                    campaign.conversations += adset.conversations; campaign.clicks += ad.clicks; campaign.reach += adset.reach;
+                    campaign.conversations += adset.conversations; 
+                    campaign.clicks += adset.clicks; // CORREÇÃO APLICADA AQUI
+                    campaign.reach += adset.reach;
                     totalImpressions += adset.impressions;
                 });
-                 if(totalImpressions > 0) campaign.frequency = totalImpressions / campaign.reach;
+                 if(totalImpressions > 0 && campaign.reach > 0) campaign.frequency = totalImpressions / campaign.reach;
             });
 
             return Object.values(campaigns);
