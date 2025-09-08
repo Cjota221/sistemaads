@@ -428,6 +428,7 @@
                     costPerConv: conversations > 0 ? (spend / conversations) : 0,
                     cpm: parseFloat(insights.cpm || 0), cpc: parseFloat(insights.cpc || 0),
                     thumbnail_url: ad.ad_creative?.thumbnail_url,
+                    permalink_url: ad.ad_creative?.permalink_url,
                     campaignName: campaignName,
                     adsetName: adsetName,
                     adsetId: ad.adset?.id,
@@ -646,10 +647,13 @@
                 const kpisHtml = getCampaignKPIsHTML(campaign);
                 const adsetsHtml = Object.values(campaign.adsets).map(adset => {
                     const adsHtml = adset.ads.map(ad => {
-                        const creativeHtml = ad.thumbnail_url 
+                        const creativeHtml = ad.permalink_url ? `<a href="${ad.permalink_url}" target="_blank">` : '';
+                        const creativeImg = ad.thumbnail_url 
                             ? `<img src="${ad.thumbnail_url}" alt="Criativo do Anúncio" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
                             : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
-                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">${formatCurrency(ad.spend)}</span></p><p>${campaign.objective === 'OUTCOME_MESSAGES' ? 'Conversas' : 'Compras'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_MESSAGES' ? ad.conversations : ad.purchases}</span></p><p>${campaign.objective === 'OUTCOME_SALES' ? 'ROAS' : 'CTR'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_SALES' ? formatNumber(ad.roas) : formatNumber(ad.ctr)+'%'}</span></p><p>CPC: <span class="font-bold text-slate-200">${formatCurrency(ad.cpc)}</span></p></div></div></div>`;
+                        const creativeHtmlEnd = ad.permalink_url ? `</a>` : '';
+                        
+                        return `<div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg border border-slate-700">${creativeHtml}${creativeImg}${creativeHtmlEnd}<div class="flex-1 min-w-0"><p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p><div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2"><p>Invest.: <span class="font-bold text-slate-200">${formatCurrency(ad.spend)}</span></p><p>${campaign.objective === 'OUTCOME_MESSAGES' ? 'Conversas' : 'Compras'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_MESSAGES' ? ad.conversations : ad.purchases}</span></p><p>${campaign.objective === 'OUTCOME_SALES' ? 'ROAS' : 'CTR'}: <span class="font-bold text-slate-200">${campaign.objective === 'OUTCOME_SALES' ? formatNumber(ad.roas) : formatNumber(ad.ctr)+'%'}</span></p><p>CPC: <span class="font-bold text-slate-200">${formatCurrency(ad.cpc)}</span></p></div></div></div>`;
                     }).join('');
                     return `<div class="bg-slate-700/50 rounded-lg p-1"><button data-accordion-trigger class="w-full flex justify-between items-center p-4 bg-slate-800 rounded-lg shadow-sm text-left hover:bg-slate-700"><div><p class="font-bold text-slate-200">${adset.name}</p></div><svg class="w-5 h-5 transition-transform flex-shrink-0 ml-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button><div data-accordion-content class="px-2 pt-3 pb-2 space-y-3">${adsHtml}</div></div>`;
                 }).join('');
@@ -1033,10 +1037,12 @@
             const worstCreatives = sortedAds.filter(ad => ad.lucroReal <= 0);
 
             const createCreativeCard = (ad) => {
-                const creativeHtml = ad.thumbnail_url 
+                const creativeHtmlLinkStart = ad.permalink_url ? `<a href="${ad.permalink_url}" target="_blank" class="block hover:opacity-80 transition-opacity">` : '<div class="block">';
+                const creativeHtmlImage = ad.thumbnail_url 
                     ? `<img src="${ad.thumbnail_url}" alt="Criativo" class="w-24 h-24 object-cover rounded-lg flex-shrink-0">`
                     : `<div class="thumbnail-placeholder w-24 h-24 flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>`;
-                
+                const creativeHtmlLinkEnd = ad.permalink_url ? `</a>` : '</div>';
+
                 const lucroColor = ad.lucroReal > 0 ? 'text-green-400' : 'text-red-400';
 
                 const isActive = ad.adset_effective_status === 'ACTIVE';
@@ -1045,12 +1051,12 @@
                 const newStatus = isActive ? 'PAUSED' : 'ACTIVE';
                 
                 const onclickStatus = ad.adsetId ? `confirmStatusChange('${ad.adsetId}', '${ad.adsetName.replace(/'/g, "\\'")}', '${newStatus}')` : `showToast('Adset ID não encontrado. Atualize a api.js', 'error')`;
-                const onclickBudget = ad.adsetId ? `updateBudget('${ad.adsetId}')` : `showToast('Adset ID não encontrado. Atualize a api.js', 'error')`;
+                const onclickBudget = ad.adsetId ? `updateBudget('creative-${ad.adsetId}')` : `showToast('Adset ID não encontrado. Atualize a api.js', 'error')`;
 
                 return `
                     <div class="flex flex-col gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
                         <div class="flex items-center gap-4">
-                            ${creativeHtml}
+                            ${creativeHtmlLinkStart}${creativeHtmlImage}${creativeHtmlLinkEnd}
                             <div class="flex-1 min-w-0">
                                 <p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p>
                                 <p class="text-xs text-slate-500 truncate" title="${ad.campaignName} > ${ad.adsetName}">${ad.campaignName} > ${ad.adsetName}</p>
