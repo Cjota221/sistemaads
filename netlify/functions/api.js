@@ -67,7 +67,7 @@ router.get('/data', async (req, res) => {
   const time_range = JSON.stringify({ since: startDate, until: endDate });
   
   try {
-    const fields = `name,status,effective_status,created_time,updated_time,campaign{name,effective_status,objective,status,created_time,daily_budget,lifetime_budget},adset{name,effective_status,status,daily_budget,lifetime_budget,optimization_goal,billing_event,bid_amount,created_time},ad_creative{thumbnail_url,title,body,call_to_action_type,image_url,video_id},insights.time_range(${time_range}){spend,impressions,clicks,ctr,cpm,cpc,reach,frequency,actions,action_values,cost_per_action_type,video_play_actions,video_avg_time_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,inline_link_clicks,outbound_clicks,website_ctr,conversion_values,conversions}`;
+    const fields = `name,status,effective_status,created_time,updated_time,campaign{name,effective_status,objective,status,created_time,daily_budget,lifetime_budget},adset{id,name,effective_status,status,daily_budget,lifetime_budget,optimization_goal,billing_event,bid_amount,created_time},ad_creative{thumbnail_url,permalink_url,title,body,call_to_action_type,image_url,video_id},insights.time_range(${time_range}){spend,impressions,clicks,ctr,cpm,cpc,reach,frequency,actions,action_values,cost_per_action_type,video_play_actions,video_avg_time_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,inline_link_clicks,outbound_clicks,website_ctr,conversion_values,conversions}`;
     const initialUrl = `https://graph.facebook.com/v19.0/${AD_ACCOUNT_ID}/ads?access_token=${token}&fields=${fields.replace(/\s+/g, '')}&limit=500`;
     const allAdData = await fetchAllPages(initialUrl);
     res.json({ data: allAdData });
@@ -77,7 +77,6 @@ router.get('/data', async (req, res) => {
   }
 });
 
-// NOVA ROTA: DADOS HISTÓRICOS
 router.get('/historical', async (req, res) => {
     const { token, startDate, endDate } = req.query;
     if (!token) return res.status(400).json({ error: 'Token é necessário.' });
@@ -92,7 +91,6 @@ router.get('/historical', async (req, res) => {
     }
 });
 
-// NOVA ROTA: DADOS DEMOGRÁFICOS
 router.get('/demographics', async (req, res) => {
     const { token, startDate, endDate } = req.query;
     if (!token) return res.status(400).json({ error: 'Token é necessário.' });
@@ -112,8 +110,6 @@ router.get('/demographics', async (req, res) => {
     }
 });
 
-
-// --- Motor de Análise Baseado em Regras (MELHORADO) ---
 function runRuleBasedAnalysis(userGoals, adsetsData) {
     const insights = [];
     const roasGoal = parseFloat(userGoals.roasGoal);
@@ -122,19 +118,16 @@ function runRuleBasedAnalysis(userGoals, adsetsData) {
     for (const adset of adsetsData) {
         if (adset.spend < 10) continue; 
         
-        // Regra 1 e 2: Escala e Prejuízo (já existentes)
         if (adset.objective === 'OUTCOME_SALES' || adset.objective === 'OUTCOME_LEADS') {
             if (adset.roas >= roasGoal && adset.cpa > 0 && adset.cpa <= cpaGoal) insights.push({ priority: "Alta", title: `Oportunidade de Escala em "${adset.name}"`, diagnosis: `Excelente performance com ROAS de ${adset.roas.toFixed(2)} e CPA de R$ ${adset.cpa.toFixed(2)}.`, action_plan: ["Aumente o orçamento diário em 20%.", "Continue a monitorizar o ROAS e o CPA."] });
             if (adset.roas < 1.0 && adset.spend > cpaGoal * 1.5) insights.push({ priority: "Crítica", title: `Alerta de Prejuízo em "${adset.name}"`, diagnosis: `Gastou R$ ${adset.spend.toFixed(2)} para gerar apenas R$ ${adset.revenue.toFixed(2)} (ROAS de ${adset.roas.toFixed(2)}).`, action_plan: ["Pause este conjunto imediatamente.", "Analise os criativos e o público antes de reativar."] });
         }
         
-        // Regra 3 e 4: Campanhas de Mensagens (já existentes)
         if (adset.objective === 'OUTCOME_MESSAGES') {
             if (adset.costPerConv > 10) insights.push({ priority: "Média", title: `Otimizar Custo por Conversa em "${adset.name}"`, diagnosis: `Custo por Conversa está em R$ ${adset.costPerConv.toFixed(2)}, o que pode ser alto.`, action_plan: ["Revise o CTA do anúncio.", "Teste novos criativos ou públicos."] });
             if (adset.costPerConv > 0 && adset.costPerConv <= 5) insights.push({ priority: "Alta", title: `Excelente Performance em "${adset.name}"`, diagnosis: `Custo por Conversa muito baixo (R$ ${adset.costPerConv.toFixed(2)}).`, action_plan: ["Considere aumentar o orçamento para gerar mais conversas."] });
         }
         
-        // NOVA REGRA 5: Detecção de Fadiga de Criativo
         if (adset.frequency > 3 && adset.ctr < 1.0) {
             insights.push({
               priority: "Alta",
@@ -144,7 +137,6 @@ function runRuleBasedAnalysis(userGoals, adsetsData) {
             });
         }
         
-        // NOVA REGRA 6: Análise de Landing Page
         if (adset.ctr > 2.0 && (adset.objective === 'OUTCOME_SALES' || adset.objective === 'OUTCOME_LEADS') && adset.roas < roasGoal * 0.8) {
             insights.push({
               priority: "Média",
@@ -159,8 +151,6 @@ function runRuleBasedAnalysis(userGoals, adsetsData) {
     return insights;
 }
 
-
-// Rota de Análise
 router.post('/analyze', async (req, res) => {
     const { userGoals, adsetsData } = req.body;
     if (!userGoals || !adsetsData) return res.status(400).json({ error: 'Metas e dados dos conjuntos são necessários.' });
@@ -172,19 +162,19 @@ router.post('/analyze', async (req, res) => {
     }
 });
 
-// --- Rotas de Gestão ---
 router.post('/update-adset-status', async (req, res) => {
     const { token, adset_id, status } = req.body;
     try {
-        const response = await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, { params: { access_token: token, status } });
-        res.json(response.data);
-    } catch (error) { res.status(500).json({ error: 'Falha ao atualizar o status.', details: error.response?.data || {} }) }
+        await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, { params: { access_token: token, status } });
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({error: 'Falha ao atualizar o status.', details: error.response?.data || {} }) }
 });
+
 router.post('/update-adset-budget', async (req, res) => {
     const { token, adset_id, daily_budget } = req.body;
     try {
-        const response = await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, { params: { access_token: token, daily_budget: parseFloat(daily_budget) * 100 } });
-        res.json(response.data);
+        await axios.post(`https://graph.facebook.com/v19.0/${adset_id}`, null, { params: { access_token: token, daily_budget: parseFloat(daily_budget) * 100 } });
+        res.json({ success: true });
     } catch (error) { res.status(500).json({ error: 'Falha ao atualizar o orçamento.', details: error.response?.data || {} }) }
 });
 
