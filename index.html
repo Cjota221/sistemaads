@@ -427,7 +427,7 @@
                     roas: roas, cpa: cpa,
                     costPerConv: conversations > 0 ? (spend / conversations) : 0,
                     cpm: parseFloat(insights.cpm || 0), cpc: parseFloat(insights.cpc || 0),
-                    thumbnail_url: ad.ad_creative?.thumbnail_url,
+                    thumbnail_url: ad.ad_creative?.thumbnail_url || ad.ad_creative?.image_url,
                     permalink_url: ad.ad_creative?.permalink_url,
                     campaignName: campaignName,
                     adsetName: adsetName,
