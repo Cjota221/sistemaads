@@ -429,7 +429,10 @@
                     cpm: parseFloat(insights.cpm || 0), cpc: parseFloat(insights.cpc || 0),
                     thumbnail_url: ad.ad_creative?.thumbnail_url,
                     campaignName: campaignName,
-                    adsetName: adsetName
+                    adsetName: adsetName,
+                    adsetId: ad.adset?.id,
+                    adset_effective_status: ad.adset?.effective_status,
+                    dailyBudget: ad.adset?.daily_budget ? (parseFloat(ad.adset.daily_budget) / 100) : 0
                 };
                 campaigns[campaignName].adsets[adsetName].ads.push(adData);
             });
@@ -999,7 +1002,6 @@
             }, 4000);
         }
 
-        // NOVA FUNÇÃO PARA RENDERIZAR CRIATIVOS
         function renderCreativesView(structuredData) {
             const topContainer = document.getElementById('top-creatives-content');
             const worstContainer = document.getElementById('worst-creatives-content');
@@ -1037,18 +1039,38 @@
                 
                 const lucroColor = ad.lucroReal > 0 ? 'text-green-400' : 'text-red-400';
 
+                const isActive = ad.adset_effective_status === 'ACTIVE';
+                const statusBtnClass = isActive ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30';
+                const statusBtnText = isActive ? 'Pausar' : 'Ativar';
+                const newStatus = isActive ? 'PAUSED' : 'ACTIVE';
+                
+                const onclickStatus = ad.adsetId ? `confirmStatusChange('${ad.adsetId}', '${ad.adsetName.replace(/'/g, "\\'")}', '${newStatus}')` : `showToast('Adset ID não encontrado. Atualize a api.js', 'error')`;
+                const onclickBudget = ad.adsetId ? `updateBudget('${ad.adsetId}')` : `showToast('Adset ID não encontrado. Atualize a api.js', 'error')`;
+
                 return `
-                    <div class="flex items-center gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                        ${creativeHtml}
-                        <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p>
-                            <p class="text-xs text-slate-500 truncate" title="${ad.campaignName} > ${ad.adsetName}">${ad.campaignName} > ${ad.adsetName}</p>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2">
-                                <p>Lucro: <span class="font-bold ${lucroColor}">${formatCurrency(ad.lucroReal)}</span></p>
-                                <p>ROAS Real: <span class="font-bold text-slate-200">${formatNumber(ad.roasReal)}</span></p>
-                                <p>Gasto: <span class="font-bold text-slate-200">${formatCurrency(ad.spend)}</span></p>
-                                <p>CTR: <span class="font-bold text-slate-200">${formatNumber(ad.ctr)}%</span></p>
+                    <div class="flex flex-col gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                        <div class="flex items-center gap-4">
+                            ${creativeHtml}
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-slate-200 truncate" title="${ad.name}">${ad.name}</p>
+                                <p class="text-xs text-slate-500 truncate" title="${ad.campaignName} > ${ad.adsetName}">${ad.campaignName} > ${ad.adsetName}</p>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-slate-400 mt-2">
+                                    <p>Lucro: <span class="font-bold ${lucroColor}">${formatCurrency(ad.lucroReal)}</span></p>
+                                    <p>ROAS Real: <span class="font-bold text-slate-200">${formatNumber(ad.roasReal)}</span></p>
+                                    <p>Gasto: <span class="font-bold text-slate-200">${formatCurrency(ad.spend)}</span></p>
+                                    <p>CTR: <span class="font-bold text-slate-200">${formatNumber(ad.ctr)}%</span></p>
+                                </div>
                             </div>
+                        </div>
+                        <div class="mt-2 pt-3 border-t border-slate-700 flex justify-between items-center gap-4">
+                            <div class="flex items-center gap-2">
+                               <label for="budget-creative-${ad.adsetId}" class="text-sm font-medium text-slate-400">Orçamento:</label>
+                               <input type="number" id="budget-creative-${ad.adsetId}" value="${formatNumber(ad.dailyBudget)}" step="1" class="budget-input p-1 rounded-md border-slate-600 shadow-sm text-sm dark-input">
+                               <button onclick="${onclickBudget}" class="text-xs bg-slate-700 hover:bg-slate-600 font-bold p-2 rounded-md">Salvar</button>
+                            </div>
+                            <button onclick="${onclickStatus}" class="btn-action font-semibold py-2 px-3 rounded-lg text-sm ${statusBtnClass}">
+                                ${statusBtnText} Conjunto
+                            </button>
                         </div>
                     </div>`;
             };
