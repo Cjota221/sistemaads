@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CJOTA Analytics - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+    
+    <div class="max-w-md w-full">
+        <!-- Logo e Título -->
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-extrabold text-transparent bg-clip-text gradient-bg mb-2">
+                CJOTA
+            </h1>
+            <p class="text-xl text-slate-300 font-semibold">Analytics Dashboard</p>
+            <p class="text-slate-400 mt-2">Análise Estratégica de Campanhas</p>
+        </div>
+
+        <!-- Card de Login -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-100 mb-2">Bem-vindo(a)</h2>
+                <p class="text-slate-400">
+                    Conecte-se com sua conta do Facebook para acessar o dashboard
+                </p>
+            </div>
+
+            <!-- Botão de Login -->
+            <button 
+                onclick="window.location.href='/.netlify/functions/auth/login'"
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transition duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 group"
+            >
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>Conectar com Facebook</span>
+                <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+            </button>
+
+            <!-- Informações de Segurança -->
+            <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div class="flex gap-3">
+                    <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div class="text-sm text-slate-300">
+                        <p class="font-semibold mb-1">Segurança e Privacidade</p>
+                        <p class="text-slate-400">
+                            Seus dados são protegidos e usados apenas para análise de campanhas. 
+                            Não compartilhamos informações com terceiros.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-slate-500 text-sm">
+            <p>&copy; 2026 CJOTA Analytics. Todos os direitos reservados.</p>
+        </div>
+    </div>
+
+    <!-- Script para verificar autenticação -->
+    <script>
+        // Verificar se já está autenticado
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        
+        if (accessToken) {
+            // Redirecionar para o app
+            window.location.href = '/app.html?access_token=' + accessToken;
+        }
+    </script>
+</body>
+</html>

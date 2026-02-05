@@ -1,17 +1,52 @@
 [build]
-  # Diretório que contém o nosso site para publicar
   publish = "."
-  # Diretório que contém as nossas funções serverless
   functions = "netlify/functions"
+  command = "echo 'Build completed'"
 
-# Aumenta o tempo limite especificamente para a função 'api' para 25 segundos.
-# Esta sintaxe é mais explícita e ajuda a evitar problemas de parsing.
-[functions.api]
+# Configurações de ambiente
+[build.environment]
+  NODE_VERSION = "18"
+
+# Timeout das functions
+[functions]
+  node_bundler = "esbuild"
+  
+[[functions.auth]]
   timeout = 25
 
+[[functions.meta-data]]
+  timeout = 30
+
+[[functions.meta-actions]]
+  timeout = 20
+
+[[functions.analyze]]
+  timeout = 30
+
+# Redirects e Rewrites
 [[redirects]]
-  # Redireciona todos os pedidos que começam com /api/ para a nossa função 'api'
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "/.netlify/functions/:splat"
   status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 200
+
+[[redirects]]
+  from = "/app"
+  to = "/app.html"
+  status = 200
+
+# Headers de segurança
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
 

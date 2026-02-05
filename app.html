@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Estratégico CJOTA</title>
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Dashboard estratégico para análise de campanhas Meta/Facebook">
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Configuração Supabase (injetada pelo Netlify) -->
+    <script>
+        window.SUPABASE_URL = '{{ SUPABASE_URL }}';
+        window.SUPABASE_ANON_KEY = '{{ SUPABASE_ANON_KEY }}';
+    </script>
+    
+    <!-- Estilos customizados -->
+    <link rel="stylesheet" href="/src/css/main.css">
+</head>
+<body class="bg-slate-900 text-slate-300">
+
+    <!-- Layout Principal -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-800 shadow-md p-6 flex-col hidden md:flex">
+            <div class="mb-8">
+                <h1 class="text-2xl font-extrabold text-slate-100">CJOTA</h1>
+                <p class="text-sm text-slate-400">Analytics</p>
+            </div>
+            
+            <nav id="sidebar-nav" class="flex flex-col gap-4">
+                <a href="#dashboard" class="nav-link flex items-center gap-3 px-4 py-2 bg-blue-600/20 text-blue-300 font-bold rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                        <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                    </svg>
+                    Dashboard
+                </a>
+                
+                <a href="#campaigns" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1z" />
+                    </svg>
+                    Campanhas
+                </a>
+                
+                <a href="#creatives" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                    Análise de Criativos
+                </a>
+                
+                <a href="#analysis" class="nav-link flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    Análise Inteligente
+                </a>
+            </nav>
+            
+            <!-- Botão de Logout -->
+            <div class="mt-auto pt-6 border-t border-slate-700">
+                <button id="logout-btn" class="w-full flex items-center gap-3 px-4 py-2 text-slate-400 font-bold rounded-lg hover:bg-slate-700 hover:text-red-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+                    </svg>
+                    Sair
+                </button>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="flex-1 overflow-y-auto">
+            <!-- Cada página será carregada aqui -->
+            <div id="app-content" class="p-6 md:p-10"></div>
+        </main>
+    </div>
+
+    <!-- Container de Toast (notificações) -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-3"></div>
+
+    <!-- Scripts da Aplicação (ES Modules) -->
+    <script type="module">
+        // Importar componentes e serviços principais
+        import router from './src/js/components/Router.js';
+        import toastManager from './src/js/components/Toast.js';
+        import modalManager from './src/js/components/Modal.js';
+        import loadingManager from './src/js/components/Loading.js';
+        import authService from './src/js/services/authService.js';
+        
+        // Importar páginas
+        import { initDashboard } from './src/js/pages/dashboard.js';
+        import { initCampaigns } from './src/js/pages/campaigns.js';
+        import { initCreatives } from './src/js/pages/creatives.js';
+        import { initAnalysis } from './src/js/pages/analysis.js';
+        
+        // Registrar rotas
+        router.register('dashboard', initDashboard);
+        router.register('campaigns', initCampaigns);
+        router.register('creatives', initCreatives);
+        router.register('analysis', initAnalysis);
+        
+        // Configurar logout
+        document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            const confirm = await modalManager.confirm({
+                title: 'Sair da Conta',
+                message: 'Tem certeza que deseja sair?',
+                confirmText: 'Sair',
+                isDangerous: true
+            });
+            
+            if (confirm) {
+                try {
+                    await authService.logout();
+                } catch (error) {
+                    toastManager.error('Erro ao fazer logout');
+                }
+            }
+        });
+        
+        // Verificar autenticação
+        async function checkAuth() {
+            const isAuth = await authService.getCurrentUserProfile();
+            if (!isAuth) {
+                // Redirecionar para login se não estiver autenticado
+                window.location.href = '/.netlify/functions/auth/login';
+            }
+        }
+        
+        // Inicializar aplicação
+        window.addEventListener('load', async () => {
+            await checkAuth();
+        });
+    </script>
+</body>
+</html>
