@@ -10,17 +10,21 @@
 # Timeout das functions
 [functions]
   node_bundler = "esbuild"
-  
-[[functions.auth]]
+  directory = "netlify/functions"
+
+[functions."auth-login"]
   timeout = 25
 
-[[functions.meta-data]]
+[functions."auth-callback"]
+  timeout = 25
+
+[functions."meta-data"]
   timeout = 30
 
-[[functions.meta-actions]]
+[functions."meta-actions"]
   timeout = 20
 
-[[functions.analyze]]
+[functions.analyze]
   timeout = 30
 
 # Redirects e Rewrites
