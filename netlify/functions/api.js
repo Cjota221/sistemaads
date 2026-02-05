@@ -1,6 +1,6 @@
-const express = require('express');
-const serverless = require('serverless-http');
-const axios = require('axios');
+import express from 'express';
+import serverless from 'serverless-http';
+import axios from 'axios';
 
 const app = express();
 app.use(express.json());
@@ -179,5 +179,6 @@ router.post('/update-adset-budget', async (req, res) => {
 });
 
 app.use('/.netlify/functions/api', router);
-module.exports.handler = serverless(app);
+
+export const handler = serverless(app);
 

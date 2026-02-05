@@ -3,7 +3,7 @@
  * Inicia o processo de autenticação OAuth com Meta/Facebook
  */
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
     const META_APP_ID = process.env.META_APP_ID;
     
     if (!META_APP_ID) {

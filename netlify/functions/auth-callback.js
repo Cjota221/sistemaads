@@ -3,10 +3,10 @@
  * Processa o callback do OAuth e troca o code por access token
  */
 
-const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+import axios from 'axios';
+import { createClient } from '@supabase/supabase-js';
 
-exports.handler = async (event, context) => {
+export const handler = async (event, context) => {
     const { code, error, error_description } = event.queryStringParameters || {};
     
     // Verificar erros do OAuth
