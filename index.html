@@ -68,13 +68,111 @@
                     <section id="login-section" class="max-w-xl mx-auto bg-slate-800 border border-slate-700 p-10 rounded-xl shadow-lg text-center">
                          <h2 class="text-2xl font-semibold text-slate-100 mb-4">Bem-vindo(a)</h2>
                         <p class="text-slate-400 mb-6">Para gerir e analisar os dados da sua conta de anúncios, por favor, conecte-se com a sua conta do Facebook.</p>
-                        <button onclick="window.location.href='/.netlify/functions/api/login'" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm hover:shadow-lg">
+                        <button onclick="window.location.href='/.netlify/functions/auth-login'" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm hover:shadow-lg">
                             Conectar com Facebook
                         </button>
                     </section>
 
                     <div id="dashboard-content" class="space-y-10 hidden">
-                        <!-- NOVO PAINEL DE SAÚDE FINANCEIRA -->
+                        
+                        <!-- ========================================= -->
+                        <!-- RESUMO PRINCIPAL - ESTOU LUCRANDO OU NÃO? -->
+                        <!-- ========================================= -->
+                        <div id="status-geral" class="p-6 rounded-2xl border-2 text-center" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+                            <p class="text-slate-400 text-sm mb-2">📊 RESULTADO DO PERÍODO</p>
+                            <div id="status-principal" class="text-4xl font-extrabold mb-4">
+                                <!-- Será preenchido via JS: ✅ LUCRANDO ou ❌ PERDENDO -->
+                                <span class="text-slate-500">Carregando...</span>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                                <div class="bg-slate-800/50 p-4 rounded-xl">
+                                    <p class="text-xs text-slate-400 flex items-center justify-center gap-1">
+                                        💰 INVESTIDO
+                                        <span class="cursor-help" title="Total gasto em anúncios no período">❓</span>
+                                    </p>
+                                    <p class="text-2xl font-bold text-white" id="resumo-investido">R$ 0</p>
+                                </div>
+                                <div class="bg-slate-800/50 p-4 rounded-xl">
+                                    <p class="text-xs text-slate-400 flex items-center justify-center gap-1">
+                                        💵 FATURADO
+                                        <span class="cursor-help" title="Receita total gerada pelos anúncios">❓</span>
+                                    </p>
+                                    <p class="text-2xl font-bold text-white" id="resumo-faturado">R$ 0</p>
+                                </div>
+                                <div class="bg-slate-800/50 p-4 rounded-xl">
+                                    <p class="text-xs text-slate-400 flex items-center justify-center gap-1">
+                                        📈 LUCRO
+                                        <span class="cursor-help" title="Faturado - Investido - Custos dos produtos">❓</span>
+                                    </p>
+                                    <p class="text-2xl font-bold" id="resumo-lucro">R$ 0</p>
+                                </div>
+                                <div class="bg-slate-800/50 p-4 rounded-xl">
+                                    <p class="text-xs text-slate-400 flex items-center justify-center gap-1">
+                                        🎯 ROAS
+                                        <span class="cursor-help" title="Retorno sobre investimento. Acima de 2.0 é bom!">❓</span>
+                                    </p>
+                                    <p class="text-2xl font-bold" id="resumo-roas">0.00</p>
+                                </div>
+                                <div class="bg-slate-800/50 p-4 rounded-xl">
+                                    <p class="text-xs text-slate-400 flex items-center justify-center gap-1">
+                                        🛒 VENDAS
+                                        <span class="cursor-help" title="Número total de conversões/vendas">❓</span>
+                                    </p>
+                                    <p class="text-2xl font-bold text-white" id="resumo-vendas">0</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ========================================= -->
+                        <!-- ALERTAS INTELIGENTES -->
+                        <!-- ========================================= -->
+                        <div id="alertas-container" class="space-y-3">
+                            <!-- Alertas serão inseridos via JS -->
+                        </div>
+
+                        <!-- ========================================= -->
+                        <!-- FILTROS E PERÍODO -->
+                        <!-- ========================================= -->
+                        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <div class="flex flex-wrap gap-4 items-end">
+                                <div class="flex-1 min-w-[150px]">
+                                    <label class="block text-xs text-slate-400 mb-1">📅 Data Início</label>
+                                    <input type="date" id="start-date" class="w-full rounded-lg p-2 dark-input text-sm">
+                                </div>
+                                <div class="flex-1 min-w-[150px]">
+                                    <label class="block text-xs text-slate-400 mb-1">📅 Data Fim</label>
+                                    <input type="date" id="end-date" class="w-full rounded-lg p-2 dark-input text-sm">
+                                </div>
+                                <div class="flex-1 min-w-[150px]">
+                                    <label class="block text-xs text-slate-400 mb-1">🔍 Filtrar Status</label>
+                                    <select id="filtro-status" class="w-full rounded-lg p-2 dark-input text-sm">
+                                        <option value="todas">Todas as Campanhas</option>
+                                        <option value="ativas">Apenas Ativas</option>
+                                        <option value="pausadas">Apenas Pausadas</option>
+                                        <option value="lucrando">Apenas Lucrando</option>
+                                        <option value="perdendo">Apenas Perdendo</option>
+                                    </select>
+                                </div>
+                                <button onclick="fetchAllData(accessToken)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                                    🔄 Atualizar
+                                </button>
+                                <button onclick="exportarRelatorio()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                                    📊 Exportar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ========================================= -->
+                        <!-- LISTA DE CAMPANHAS - CARDS VISUAIS -->
+                        <!-- ========================================= -->
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-100 mb-4">📋 Suas Campanhas</h3>
+                            <div id="campanhas-cards" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <!-- Cards de campanha serão inseridos via JS -->
+                            </div>
+                        </div>
+
+                        <!-- PAINEL DE SAÚDE FINANCEIRA (RESUMO) -->
                         <div id="financial-health-panel" class="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div class="bg-red-500/10 border border-red-500/30 p-4 rounded-lg text-center">
                                 <p class="text-sm font-semibold text-red-400">🔴 PERDENDO</p>
@@ -261,43 +359,201 @@
     </div>
 
     <script>
+        // ===========================================================
+        // VARIÁVEIS GLOBAIS
+        // ===========================================================
         let rawAdData = [], structuredCampaigns = [], accessToken = null, activeCharts = {};
         let overallMetrics = {}; 
-
+        
+        // ===========================================================
+        // FUNÇÕES DE FORMATAÇÃO
+        // ===========================================================
         const formatNumber = (value, decimals = 2) => (typeof value === 'number' && isFinite(value)) ? value.toFixed(decimals) : (0).toFixed(decimals);
         const formatCurrency = (value) => `R$ ${formatNumber(value)}`;
 
+        // ===========================================================
+        // PERSISTÊNCIA DE DADOS (localStorage)
+        // ===========================================================
+        const STORAGE_KEYS = {
+            ACCESS_TOKEN: 'cjota_access_token',
+            TOKEN_EXPIRY: 'cjota_token_expiry',
+            CACHED_DATA: 'cjota_cached_data',
+            CACHED_TIMESTAMP: 'cjota_cached_timestamp',
+            COST_CONFIG: 'cjota_cost_config',
+            LAST_FILTERS: 'cjota_last_filters'
+        };
+
+        // Salva token no localStorage
+        function saveToken(token) {
+            localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+            // Token do Meta expira em ~60 dias, salvamos data de expiração
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + 55); // Alertar 5 dias antes
+            localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiry.toISOString());
+        }
+
+        // Recupera token salvo
+        function getSavedToken() {
+            const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+            const expiry = localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+            
+            if (token && expiry) {
+                const expiryDate = new Date(expiry);
+                const now = new Date();
+                
+                // Token ainda válido
+                if (expiryDate > now) {
+                    // Alerta se faltar menos de 7 dias
+                    const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                    if (daysLeft <= 7) {
+                        setTimeout(() => {
+                            showAlert('warning', '⏰ Token Expirando', 
+                                `Seu token do Facebook expira em ${daysLeft} dias. Reconecte para não perder acesso.`, 
+                                'Reconectar', () => window.location.href='/.netlify/functions/auth-login');
+                        }, 2000);
+                    }
+                    return token;
+                }
+            }
+            return null;
+        }
+
+        // Salva dados em cache
+        function cacheData(data) {
+            try {
+                localStorage.setItem(STORAGE_KEYS.CACHED_DATA, JSON.stringify(data));
+                localStorage.setItem(STORAGE_KEYS.CACHED_TIMESTAMP, new Date().toISOString());
+            } catch (e) {
+                console.warn('Erro ao salvar cache:', e);
+            }
+        }
+
+        // Recupera dados do cache
+        function getCachedData() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEYS.CACHED_DATA);
+                const timestamp = localStorage.getItem(STORAGE_KEYS.CACHED_TIMESTAMP);
+                
+                if (data && timestamp) {
+                    const cacheAge = (new Date() - new Date(timestamp)) / (1000 * 60); // minutos
+                    return { data: JSON.parse(data), age: cacheAge };
+                }
+            } catch (e) {
+                console.warn('Erro ao ler cache:', e);
+            }
+            return null;
+        }
+
+        // Salva configurações de custo
+        function saveCostConfig() {
+            const config = {
+                precoMedioVenda: document.getElementById('preco-medio-venda-assumido')?.value || 35,
+                custoDireto: document.getElementById('custo-direto-unitario')?.value || 17.73,
+                custoVariavel: document.getElementById('custo-variavel-unitario')?.value || 2.40,
+                custosFixos: document.getElementById('custos-fixos-mes')?.value || 13330,
+                metaVendas: document.getElementById('meta-vendas-mes')?.value || 1500,
+                lucroMeta: document.getElementById('lucro-liquido-par-meta')?.value || 5,
+                roasGoal: document.getElementById('roas-goal')?.value || 6,
+                cpaGoal: document.getElementById('cpa-goal')?.value || 30
+            };
+            localStorage.setItem(STORAGE_KEYS.COST_CONFIG, JSON.stringify(config));
+        }
+
+        // Carrega configurações de custo
+        function loadCostConfig() {
+            try {
+                const config = JSON.parse(localStorage.getItem(STORAGE_KEYS.COST_CONFIG));
+                if (config) {
+                    if (document.getElementById('preco-medio-venda-assumido')) 
+                        document.getElementById('preco-medio-venda-assumido').value = config.precoMedioVenda;
+                    if (document.getElementById('custo-direto-unitario')) 
+                        document.getElementById('custo-direto-unitario').value = config.custoDireto;
+                    if (document.getElementById('custo-variavel-unitario')) 
+                        document.getElementById('custo-variavel-unitario').value = config.custoVariavel;
+                    if (document.getElementById('custos-fixos-mes')) 
+                        document.getElementById('custos-fixos-mes').value = config.custosFixos;
+                    if (document.getElementById('meta-vendas-mes')) 
+                        document.getElementById('meta-vendas-mes').value = config.metaVendas;
+                    if (document.getElementById('lucro-liquido-par-meta')) 
+                        document.getElementById('lucro-liquido-par-meta').value = config.lucroMeta;
+                    if (document.getElementById('roas-goal')) 
+                        document.getElementById('roas-goal').value = config.roasGoal;
+                    if (document.getElementById('cpa-goal')) 
+                        document.getElementById('cpa-goal').value = config.cpaGoal;
+                }
+            } catch (e) {
+                console.warn('Erro ao carregar config:', e);
+            }
+        }
+
+        // ===========================================================
+        // INICIALIZAÇÃO
+        // ===========================================================
         window.onload = function () {
             const urlParams = new URLSearchParams(window.location.search);
-            accessToken = urlParams.get('access_token');
+            let tokenFromUrl = urlParams.get('access_token');
             const loginSection = document.getElementById('login-section');
             const dashboardContent = document.getElementById('dashboard-content');
             
             setDefaultDates();
+            loadCostConfig();
 
-            if (accessToken) {
-                loginSection.classList.add('hidden');
-                dashboardContent.classList.remove('hidden');
+            // Prioridade: token da URL > token salvo
+            if (tokenFromUrl) {
+                accessToken = tokenFromUrl;
+                saveToken(tokenFromUrl);
+                // Limpa URL
                 if (window.history.replaceState) {
                     const url = new URL(window.location.href);
                     url.searchParams.delete('access_token');
                     window.history.replaceState({ path: url.href }, '', url.href);
                 }
-                fetchAllData(accessToken);
+            } else {
+                accessToken = getSavedToken();
+            }
+
+            if (accessToken) {
+                loginSection.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
+                
+                // Verifica se tem cache recente (menos de 15 min)
+                const cached = getCachedData();
+                if (cached && cached.age < 15) {
+                    showToast(`Carregando dados do cache (${Math.round(cached.age)} min atrás)`, 'info');
+                    rawAdData = cached.data.rawAdData || [];
+                    structuredCampaigns = structureCampaignData(rawAdData);
+                    processAndDisplayAll(rawAdData, structuredCampaigns, 
+                        cached.data.historical || {data:[]}, 
+                        cached.data.demographics || {device_platform:[], age_gender:[]});
+                } else {
+                    fetchAllData(accessToken);
+                }
             } else {
                 loginSection.classList.remove('hidden');
                 dashboardContent.classList.add('hidden');
             }
+            
             setupNavigation();
             setupAutomaticAnalysis();
-            setupAccordions(); 
-            document.getElementById('generate-analysis-btn').addEventListener('click', triggerAnalysis);
+            setupAccordions();
+            setupCostInputListeners();
+            document.getElementById('generate-analysis-btn')?.addEventListener('click', triggerAnalysis);
         };
+
+        // Listener para salvar configs ao mudar
+        function setupCostInputListeners() {
+            document.querySelectorAll('.cost-input, #roas-goal, #cpa-goal').forEach(input => {
+                input.addEventListener('change', saveCostConfig);
+            });
+        }
         
+        // ===========================================================
+        // BUSCA DE DADOS
+        // ===========================================================
         async function fetchAllData(token) {
             const loadingState = document.getElementById('loading-state');
             loadingState.classList.remove('hidden');
-            ['dashboard-content', 'campaigns-view', 'analysis-view', 'creatives-view', 'error-container'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['dashboard-content', 'campaigns-view', 'analysis-view', 'creatives-view', 'error-container'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
 
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
@@ -329,6 +585,13 @@
                 rawAdData = mainData.data;
                 structuredCampaigns = structureCampaignData(rawAdData);
                 
+                // Salva em cache
+                cacheData({
+                    rawAdData,
+                    historical: historicalData,
+                    demographics: demographicData
+                });
+                
                 processAndDisplayAll(rawAdData, structuredCampaigns, historicalData, demographicData);
 
             } catch (error) {
@@ -344,11 +607,331 @@
             processAndDisplayDashboard(mainRaw, mainStructured);
             renderCampaignsView(mainStructured);
             renderCreativesView(mainStructured);
+            updateResumoGeral(mainStructured); // Novo: atualiza resumo visual
+            renderCampanhaCards(mainStructured); // Novo: cards de campanhas
             
             createPerformanceChart(historical.data);
             createDeviceChart(demographics.device_platform);
             createROASScatterChart(mainStructured);
             createCampaignRankingChart(mainStructured);
+        }
+
+        // ===========================================================
+        // RESUMO VISUAL - Status de lucrando/perdendo
+        // ===========================================================
+        function updateResumoGeral(campaigns) {
+            const roasGoal = parseFloat(document.getElementById('roas-goal')?.value) || 6.0;
+            const cpaGoal = parseFloat(document.getElementById('cpa-goal')?.value) || 30.0;
+            
+            let totalSpend = 0, totalRevenue = 0, totalPurchases = 0;
+            campaigns.forEach(c => {
+                totalSpend += c.spend;
+                totalRevenue += c.revenue;
+                totalPurchases += c.purchases;
+            });
+            
+            const lucro = totalRevenue - totalSpend;
+            const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+            const isLucrando = lucro > 0 && roas >= roasGoal * 0.8;
+            
+            // Atualiza status
+            const statusEl = document.getElementById('status-lucrativo');
+            if (statusEl) {
+                if (isLucrando) {
+                    statusEl.className = 'inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xl font-bold animate-pulse bg-green-500/20 text-green-400 border border-green-500/30';
+                    statusEl.innerHTML = `
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        <span>LUCRANDO</span>
+                    `;
+                } else if (lucro < 0) {
+                    statusEl.className = 'inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xl font-bold animate-pulse bg-red-500/20 text-red-400 border border-red-500/30';
+                    statusEl.innerHTML = `
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path>
+                        </svg>
+                        <span>PERDENDO</span>
+                    `;
+                } else {
+                    statusEl.className = 'inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xl font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
+                    statusEl.innerHTML = `
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"></path>
+                        </svg>
+                        <span>NO ZERO</span>
+                    `;
+                }
+            }
+            
+            // Atualiza KPIs do resumo
+            document.getElementById('kpi-investido').textContent = formatCurrency(totalSpend);
+            document.getElementById('kpi-faturado').textContent = formatCurrency(totalRevenue);
+            
+            const lucroEl = document.getElementById('kpi-lucro');
+            lucroEl.textContent = formatCurrency(lucro);
+            lucroEl.className = lucro >= 0 ? 'text-3xl font-bold text-green-400' : 'text-3xl font-bold text-red-400';
+            
+            const roasEl = document.getElementById('kpi-roas');
+            roasEl.textContent = formatNumber(roas, 2) + 'x';
+            roasEl.className = roas >= roasGoal ? 'text-3xl font-bold text-green-400' : 
+                              roas >= roasGoal * 0.7 ? 'text-3xl font-bold text-yellow-400' : 'text-3xl font-bold text-red-400';
+            
+            document.getElementById('kpi-vendas').textContent = totalPurchases;
+            
+            // Gera alertas inteligentes
+            generateAlerts(campaigns, totalSpend, totalRevenue, totalPurchases, roas, roasGoal, cpaGoal);
+        }
+        
+        // ===========================================================
+        // SISTEMA DE ALERTAS INTELIGENTES
+        // ===========================================================
+        function generateAlerts(campaigns, totalSpend, totalRevenue, totalPurchases, roas, roasGoal, cpaGoal) {
+            const alertsContainer = document.getElementById('alerts-container');
+            if (!alertsContainer) return;
+            
+            alertsContainer.innerHTML = '';
+            const alerts = [];
+            
+            // Alerta de ROAS baixo
+            if (roas < roasGoal * 0.7 && totalSpend > 100) {
+                alerts.push({
+                    type: 'danger',
+                    icon: '🚨',
+                    title: 'ROAS Crítico',
+                    message: `Seu ROAS está em ${formatNumber(roas)}x, muito abaixo da meta de ${roasGoal}x. Considere pausar campanhas de baixo desempenho.`,
+                    action: 'Ver Campanhas Ruins',
+                    actionFn: () => document.querySelector('a[href="#campaigns"]')?.click()
+                });
+            } else if (roas < roasGoal && roas >= roasGoal * 0.7 && totalSpend > 50) {
+                alerts.push({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: 'ROAS Abaixo da Meta',
+                    message: `ROAS atual: ${formatNumber(roas)}x. Meta: ${roasGoal}x. Você está ${((roasGoal - roas)/roasGoal*100).toFixed(0)}% abaixo da meta.`,
+                    action: 'Analisar',
+                    actionFn: () => document.querySelector('a[href="#analysis"]')?.click()
+                });
+            }
+            
+            // Alerta de campanhas sem vendas
+            const semVendas = campaigns.filter(c => c.spend > 50 && c.purchases === 0);
+            if (semVendas.length > 0) {
+                alerts.push({
+                    type: 'warning',
+                    icon: '💸',
+                    title: `${semVendas.length} campanha(s) gastando sem vender`,
+                    message: `Campanhas: ${semVendas.map(c => c.name).join(', ')}. Gastaram R$ ${formatNumber(semVendas.reduce((s,c) => s+c.spend, 0))} sem nenhuma venda.`,
+                    action: 'Ver Detalhes',
+                    actionFn: () => document.querySelector('a[href="#campaigns"]')?.click()
+                });
+            }
+            
+            // Alerta de CPA alto
+            const cpaAtual = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
+            if (cpaAtual > cpaGoal * 1.5 && totalPurchases > 0) {
+                alerts.push({
+                    type: 'danger',
+                    icon: '📈',
+                    title: 'CPA Muito Alto',
+                    message: `Custo por aquisição: R$ ${formatNumber(cpaAtual)}. Meta: R$ ${cpaGoal}. Cada venda está custando ${((cpaAtual/cpaGoal - 1)*100).toFixed(0)}% a mais que o ideal.`
+                });
+            }
+            
+            // Alerta positivo
+            if (roas >= roasGoal && totalPurchases >= 10) {
+                alerts.push({
+                    type: 'success',
+                    icon: '🎉',
+                    title: 'Ótimo Desempenho!',
+                    message: `Parabéns! Seu ROAS está em ${formatNumber(roas)}x, acima da meta. Continue assim!`
+                });
+            }
+            
+            // Renderiza alertas
+            alerts.forEach(alert => {
+                const div = document.createElement('div');
+                const bgColor = alert.type === 'danger' ? 'bg-red-500/10 border-red-500/30' :
+                               alert.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                               alert.type === 'success' ? 'bg-green-500/10 border-green-500/30' : 'bg-blue-500/10 border-blue-500/30';
+                const textColor = alert.type === 'danger' ? 'text-red-400' :
+                                 alert.type === 'warning' ? 'text-yellow-400' :
+                                 alert.type === 'success' ? 'text-green-400' : 'text-blue-400';
+                
+                div.className = `p-4 rounded-lg border ${bgColor} mb-3`;
+                div.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="text-2xl">${alert.icon}</span>
+                        <div class="flex-1">
+                            <h4 class="font-bold ${textColor}">${alert.title}</h4>
+                            <p class="text-sm text-slate-300 mt-1">${alert.message}</p>
+                            ${alert.action ? `<button class="mt-2 text-sm ${textColor} hover:underline font-medium" onclick="(${alert.actionFn.toString()})()">→ ${alert.action}</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                alertsContainer.appendChild(div);
+            });
+            
+            if (alerts.length === 0) {
+                alertsContainer.innerHTML = '<p class="text-slate-500 text-center py-4">Nenhum alerta no momento</p>';
+            }
+        }
+        
+        // ===========================================================
+        // CARDS DE CAMPANHAS
+        // ===========================================================
+        function renderCampanhaCards(campaigns) {
+            const container = document.getElementById('campanhas-cards');
+            if (!container) return;
+            
+            const roasGoal = parseFloat(document.getElementById('roas-goal')?.value) || 6.0;
+            const statusFilter = document.getElementById('filter-status')?.value || 'all';
+            
+            // Filtra campanhas
+            let filtered = [...campaigns];
+            if (statusFilter === 'lucrando') {
+                filtered = campaigns.filter(c => c.spend > 0 && (c.revenue / c.spend) >= roasGoal);
+            } else if (statusFilter === 'perdendo') {
+                filtered = campaigns.filter(c => c.spend > 0 && (c.revenue / c.spend) < roasGoal);
+            } else if (statusFilter === 'sem-vendas') {
+                filtered = campaigns.filter(c => c.purchases === 0 && c.spend > 0);
+            }
+            
+            // Ordena por gasto (maior primeiro)
+            filtered.sort((a, b) => b.spend - a.spend);
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-center py-8 col-span-full">Nenhuma campanha encontrada com os filtros selecionados</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(c => {
+                const roas = c.spend > 0 ? c.revenue / c.spend : 0;
+                const cpa = c.purchases > 0 ? c.spend / c.purchases : 0;
+                const lucro = c.revenue - c.spend;
+                const isLucrando = roas >= roasGoal;
+                
+                const statusColor = isLucrando ? 'border-green-500/50 bg-green-500/5' : 
+                                   lucro < 0 ? 'border-red-500/50 bg-red-500/5' : 'border-yellow-500/50 bg-yellow-500/5';
+                const statusBadge = isLucrando ? '<span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">Lucrando</span>' :
+                                   lucro < 0 ? '<span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Perdendo</span>' :
+                                   '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">No Zero</span>';
+                
+                return `
+                    <div class="p-4 rounded-xl border ${statusColor} hover:bg-slate-700/50 transition-all cursor-pointer" onclick="expandCampaignDetails('${c.name.replace(/'/g, "\\'")}')">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-semibold text-white text-sm truncate flex-1 mr-2" title="${c.name}">${c.name}</h4>
+                            ${statusBadge}
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-slate-500">Investido</span>
+                                <p class="text-white font-medium">${formatCurrency(c.spend)}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">Faturado</span>
+                                <p class="text-white font-medium">${formatCurrency(c.revenue)}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">Lucro</span>
+                                <p class="${lucro >= 0 ? 'text-green-400' : 'text-red-400'} font-medium">${formatCurrency(lucro)}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">ROAS</span>
+                                <p class="${roas >= roasGoal ? 'text-green-400' : roas >= roasGoal*0.7 ? 'text-yellow-400' : 'text-red-400'} font-medium">${formatNumber(roas)}x</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">Vendas</span>
+                                <p class="text-white font-medium">${c.purchases}</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-500">CPA</span>
+                                <p class="text-white font-medium">${cpa > 0 ? formatCurrency(cpa) : '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Expande detalhes da campanha
+        function expandCampaignDetails(campaignName) {
+            const campaign = structuredCampaigns.find(c => c.name === campaignName);
+            if (!campaign) return;
+            
+            // Navega para aba de campanhas
+            document.querySelector('a[href="#campaigns"]')?.click();
+            
+            // Scrolla até a campanha
+            setTimeout(() => {
+                const campaignEl = document.querySelector(`[data-campaign-name="${campaignName}"]`);
+                if (campaignEl) {
+                    campaignEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    campaignEl.classList.add('ring-2', 'ring-blue-500');
+                    setTimeout(() => campaignEl.classList.remove('ring-2', 'ring-blue-500'), 3000);
+                }
+            }, 300);
+        }
+        
+        // Event listeners para filtros
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('filter-status')?.addEventListener('change', () => renderCampanhaCards(structuredCampaigns));
+            document.getElementById('btn-exportar')?.addEventListener('click', exportarRelatorio);
+        });
+        
+        // ===========================================================
+        // EXPORTAR RELATÓRIO
+        // ===========================================================
+        function exportarRelatorio() {
+            if (structuredCampaigns.length === 0) {
+                showToast('Nenhum dado para exportar', 'error');
+                return;
+            }
+            
+            const startDate = document.getElementById('start-date')?.value;
+            const endDate = document.getElementById('end-date')?.value;
+            
+            let totalSpend = 0, totalRevenue = 0, totalPurchases = 0;
+            structuredCampaigns.forEach(c => {
+                totalSpend += c.spend;
+                totalRevenue += c.revenue;
+                totalPurchases += c.purchases;
+            });
+            
+            const roasGoal = parseFloat(document.getElementById('roas-goal')?.value) || 6;
+            const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+            const cpa = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
+            const lucro = totalRevenue - totalSpend;
+            
+            // Cria CSV
+            let csv = 'RELATÓRIO CJOTA ANALYTICS\n';
+            csv += `Período: ${startDate} a ${endDate}\n\n`;
+            csv += `RESUMO GERAL\n`;
+            csv += `Investimento Total,${formatNumber(totalSpend)}\n`;
+            csv += `Faturamento Total,${formatNumber(totalRevenue)}\n`;
+            csv += `Lucro Bruto,${formatNumber(lucro)}\n`;
+            csv += `ROAS,${formatNumber(roas)}\n`;
+            csv += `Total de Vendas,${totalPurchases}\n`;
+            csv += `CPA Médio,${formatNumber(cpa)}\n\n`;
+            csv += `DETALHAMENTO POR CAMPANHA\n`;
+            csv += `Campanha,Investido,Faturado,Lucro,ROAS,Vendas,CPA,Status\n`;
+            
+            structuredCampaigns.forEach(c => {
+                const cRoas = c.spend > 0 ? c.revenue / c.spend : 0;
+                const cCpa = c.purchases > 0 ? c.spend / c.purchases : 0;
+                const cLucro = c.revenue - c.spend;
+                const status = cRoas >= roasGoal ? 'Lucrando' : cLucro < 0 ? 'Perdendo' : 'No Zero';
+                csv += `"${c.name}",${formatNumber(c.spend)},${formatNumber(c.revenue)},${formatNumber(cLucro)},${formatNumber(cRoas)},${c.purchases},${formatNumber(cCpa)},${status}\n`;
+            });
+            
+            // Download
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `relatorio-cjota-${startDate}-a-${endDate}.csv`;
+            link.click();
+            
+            showToast('Relatório exportado com sucesso!', 'success');
         }
 
         function structureCampaignData(data) {
@@ -968,6 +1551,37 @@
                 toast.classList.remove('translate-x-0');
                 toast.classList.add('translate-x-full');
             }, 4000);
+        }
+
+        // Mostra alerta persistente com ação opcional
+        function showAlert(type, title, message, actionText, actionCallback) {
+            const alertDiv = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500/10 border-green-500/30' : 
+                           type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                           type === 'error' ? 'bg-red-500/10 border-red-500/30' : 'bg-blue-500/10 border-blue-500/30';
+            const textColor = type === 'success' ? 'text-green-400' : 
+                             type === 'warning' ? 'text-yellow-400' :
+                             type === 'error' ? 'text-red-400' : 'text-blue-400';
+            
+            alertDiv.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 rounded-lg border ${bgColor} shadow-xl max-w-md`;
+            alertDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="flex-1">
+                        <h4 class="font-bold ${textColor}">${title}</h4>
+                        <p class="text-sm text-slate-300 mt-1">${message}</p>
+                        <div class="mt-3 flex gap-2">
+                            ${actionText ? `<button class="px-3 py-1 rounded ${textColor} border border-current text-sm hover:bg-white/10" id="alert-action">${actionText}</button>` : ''}
+                            <button class="px-3 py-1 rounded text-slate-400 text-sm hover:text-white" id="alert-dismiss">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            alertDiv.querySelector('#alert-dismiss').onclick = () => alertDiv.remove();
+            if (actionCallback && alertDiv.querySelector('#alert-action')) {
+                alertDiv.querySelector('#alert-action').onclick = () => { actionCallback(); alertDiv.remove(); };
+            }
         }
 
         function renderCreativesView(structuredData) {
