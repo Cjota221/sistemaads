@@ -6,24 +6,23 @@
 // Versão da API do Meta/Facebook
 export const META_API_VERSION = 'v19.0';
 
-// URLs da API
+// URLs da API - Corrigidos para corresponder às rotas reais em api.js
 export const API_ENDPOINTS = {
-    // Auth
-    LOGIN: '/.netlify/functions/auth/login',
-    CALLBACK: '/.netlify/functions/auth/callback',
-    LOGOUT: '/.netlify/functions/auth/logout',
+    // Auth - Funções separadas
+    LOGIN: '/.netlify/functions/auth-login',
+    CALLBACK: '/.netlify/functions/auth-callback',
     
-    // Data
-    GET_DATA: '/.netlify/functions/meta-data/ads',
-    GET_HISTORICAL: '/.netlify/functions/meta-data/historical',
-    GET_DEMOGRAPHICS: '/.netlify/functions/meta-data/demographics',
+    // Data - Rotas do Express em api.js
+    GET_DATA: '/.netlify/functions/api/data',
+    GET_HISTORICAL: '/.netlify/functions/api/historical',
+    GET_DEMOGRAPHICS: '/.netlify/functions/api/demographics',
     
-    // Actions
-    UPDATE_STATUS: '/.netlify/functions/meta-actions/status',
-    UPDATE_BUDGET: '/.netlify/functions/meta-actions/budget',
+    // Actions - Rotas do Express em api.js
+    UPDATE_STATUS: '/.netlify/functions/api/update-adset-status',
+    UPDATE_BUDGET: '/.netlify/functions/api/update-adset-budget',
     
-    // Analysis
-    ANALYZE: '/.netlify/functions/analyze'
+    // Analysis - Rota do Express em api.js
+    ANALYZE: '/.netlify/functions/api/analyze'
 };
 
 // Configurações padrão de custos

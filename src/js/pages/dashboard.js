@@ -16,6 +16,19 @@ let structuredData = [];
 let costConfig = {};
 let settings = {};
 
+// Função global para pausar adset (chamada via onclick)
+window.pauseAdset = async function(adsetId, adsetName) {
+    if (!confirm(`Deseja pausar o conjunto "${adsetName}"?`)) return;
+    
+    try {
+        await metaApiService.updateAdsetStatus(adsetId, 'PAUSED');
+        toastManager.success(`Conjunto "${adsetName}" pausado com sucesso!`);
+        await loadDashboardData(true);
+    } catch (error) {
+        toastManager.error(`Erro ao pausar: ${error.message}`);
+    }
+};
+
 export async function initDashboard() {
     const container = document.getElementById('app-content');
     container.innerHTML = getDashboardHTML();
@@ -224,15 +237,114 @@ function updateDisplay() {
 }
 
 function updateKPIs() {
-    // Implementação dos KPIs será adicionada
+    const kpiGrid = document.getElementById('kpi-grid');
+    if (!kpiGrid || !rawData.length) return;
+    
+    const metrics = dataProcessor.calculateOverallMetrics(rawData);
+    const roasGoal = parseFloat(document.getElementById('roas-goal')?.value) || 6;
+    const cpaGoal = parseFloat(document.getElementById('cpa-goal')?.value) || 30;
+    
+    const kpis = [
+        { label: 'Investimento', value: formatCurrency(metrics.totalSpend), color: 'text-slate-100' },
+        { label: 'Receita', value: formatCurrency(metrics.totalRevenue), color: metrics.totalRevenue > metrics.totalSpend ? 'text-green-400' : 'text-red-400' },
+        { label: 'ROAS', value: formatNumber(metrics.overallROAS), color: getPerformanceColor(metrics.overallROAS, roasGoal, true) },
+        { label: 'CPA', value: formatCurrency(metrics.overallCPA), color: getPerformanceColor(metrics.overallCPA, cpaGoal, false) },
+        { label: 'Compras', value: formatNumber(metrics.totalPurchases, 0), color: 'text-slate-100' },
+        { label: 'CTR', value: formatNumber(metrics.overallCTR) + '%', color: getPerformanceColor(metrics.overallCTR, 1, true) }
+    ];
+    
+    kpiGrid.innerHTML = kpis.map(kpi => `
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+            <p class="text-xs text-slate-400">${kpi.label}</p>
+            <p class="text-xl font-bold ${kpi.color}">${kpi.value}</p>
+        </div>
+    `).join('');
 }
 
 function updateFinancialHealth() {
-    // Implementação da saúde financeira será adicionada
+    if (!structuredData.length || !costConfig.roasMinimo) return;
+    
+    const categories = dataProcessor.categorizeAdsetsByHealth(structuredData, costConfig);
+    
+    // Calcular totais por categoria
+    const lossTotal = categories.loss.reduce((sum, a) => sum + a.lucroReal, 0);
+    const breakEvenTotal = categories.breakEven.reduce((sum, a) => sum + a.lucroReal, 0);
+    const profitTotal = categories.profit.reduce((sum, a) => sum + a.lucroReal, 0);
+    const scaleTotal = categories.scale.reduce((sum, a) => sum + a.lucroReal, 0);
+    
+    // Atualizar painel de saúde
+    document.getElementById('health-perda-valor').textContent = formatCurrency(lossTotal);
+    document.getElementById('health-perda-count').textContent = `(${categories.loss.length} conjuntos)`;
+    
+    document.getElementById('health-empate-valor').textContent = formatCurrency(breakEvenTotal);
+    document.getElementById('health-empate-count').textContent = `(${categories.breakEven.length} conjuntos)`;
+    
+    document.getElementById('health-lucro-valor').textContent = formatCurrency(profitTotal);
+    document.getElementById('health-lucro-count').textContent = `(${categories.profit.length} conjuntos)`;
+    
+    document.getElementById('health-escala-valor').textContent = formatCurrency(scaleTotal);
+    document.getElementById('health-escala-count').textContent = `(${categories.scale.length} conjuntos)`;
 }
 
 function updateActionPanels() {
-    // Implementação dos painéis de ação será adicionada
+    if (!structuredData.length || !costConfig.roasMinimo) return;
+    
+    const categories = dataProcessor.categorizeAdsetsByHealth(structuredData, costConfig);
+    
+    // Painel Escalar
+    const escalarContent = document.getElementById('escalar-content');
+    if (categories.scale.length > 0) {
+        escalarContent.innerHTML = categories.scale.slice(0, 5).map(adset => `
+            <div class="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <p class="font-semibold text-slate-100 truncate">${adset.name}</p>
+                <p class="text-xs text-slate-400">${adset.campaignName}</p>
+                <div class="flex gap-4 mt-2 text-xs">
+                    <span class="text-green-400">ROAS: ${formatNumber(adset.roas)}</span>
+                    <span class="text-green-400">Lucro: ${formatCurrency(adset.lucroReal)}</span>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        escalarContent.innerHTML = '<p class="text-slate-500 text-sm">Nenhum conjunto pronto para escalar.</p>';
+    }
+    
+    // Painel Otimizar (empate)
+    const atencaoContent = document.getElementById('atencao-content');
+    if (categories.breakEven.length > 0) {
+        atencaoContent.innerHTML = categories.breakEven.slice(0, 5).map(adset => `
+            <div class="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p class="font-semibold text-slate-100 truncate">${adset.name}</p>
+                <p class="text-xs text-slate-400">${adset.campaignName}</p>
+                <div class="flex gap-4 mt-2 text-xs">
+                    <span class="text-yellow-400">ROAS: ${formatNumber(adset.roas)}</span>
+                    <span class="text-yellow-400">Lucro: ${formatCurrency(adset.lucroReal)}</span>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        atencaoContent.innerHTML = '<p class="text-slate-500 text-sm">Nenhum conjunto precisa de otimização.</p>';
+    }
+    
+    // Painel Pausar (prejuízo)
+    const pausarContent = document.getElementById('pausar-content');
+    if (categories.loss.length > 0) {
+        pausarContent.innerHTML = categories.loss.slice(0, 5).map(adset => `
+            <div class="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p class="font-semibold text-slate-100 truncate">${adset.name}</p>
+                <p class="text-xs text-slate-400">${adset.campaignName}</p>
+                <div class="flex gap-4 mt-2 text-xs">
+                    <span class="text-red-400">ROAS: ${formatNumber(adset.roas)}</span>
+                    <span class="text-red-400">Prejuízo: ${formatCurrency(adset.lucroReal)}</span>
+                </div>
+                <button class="mt-2 text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded hover:bg-red-500/30" 
+                        onclick="pauseAdset('${adset.id}', '${adset.name.replace(/'/g, "\\'")}')">
+                    ⏸️ Pausar
+                </button>
+            </div>
+        `).join('');
+    } else {
+        pausarContent.innerHTML = '<p class="text-slate-500 text-sm">Nenhum conjunto com prejuízo!</p>';
+    }
 }
 
 function updateCostCalculations() {

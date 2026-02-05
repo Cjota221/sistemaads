@@ -103,8 +103,16 @@ function renderAnalysis(insights) {
         return;
     }
     
+    // Mapear prioridades para cores (api.js usa 'Crítica', 'Alta', 'Média', 'Informativo')
+    const priorityColors = {
+        'Crítica': 'border-red-500 bg-red-500/10',
+        'Alta': 'border-amber-500 bg-amber-500/10',
+        'Média': 'border-blue-500 bg-blue-500/10',
+        'Informativo': 'border-slate-600 bg-slate-600/10'
+    };
+    
     content.innerHTML = insights.map(insight => `
-        <div class="bg-slate-800 rounded-lg p-5 border-l-4 ${ANALYSIS_PRIORITIES[insight.priority]?.color || 'border-slate-500'}">
+        <div class="bg-slate-800 rounded-lg p-5 border-l-4 ${priorityColors[insight.priority] || 'border-slate-500'}">
             <div class="flex items-center justify-between mb-2">
                 <h4 class="text-lg font-bold text-slate-100">${insight.title}</h4>
                 <span class="text-xs font-semibold px-2 py-1 rounded-full bg-slate-700 text-slate-300">

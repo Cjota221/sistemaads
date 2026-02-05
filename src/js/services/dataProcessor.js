@@ -62,9 +62,26 @@ class DataProcessor {
 
             // Extrair métricas
             const spend = parseFloat(insights.spend || 0);
-            const purchases = parseInt(insights.actions?.find(a => a.action_type === 'purchase')?.value || 0);
-            const revenue = parseFloat(insights.action_values?.find(a => a.action_type === 'purchase')?.value || 0);
-            const conversations = parseInt(insights.actions?.find(a => a.action_type.includes('messaging_conversation'))?.value || 0);
+            
+            // CORREÇÃO: Capturar TODOS os tipos de conversão de compra
+            const purchaseTypes = ['purchase', 'omni_purchase', 'offsite_conversion.fb_pixel_purchase', 'onsite_conversion.purchase'];
+            const purchases = purchaseTypes.reduce((total, type) => {
+                const action = insights.actions?.find(a => a.action_type === type);
+                return total + parseInt(action?.value || 0);
+            }, 0);
+            
+            const revenue = purchaseTypes.reduce((total, type) => {
+                const action = insights.action_values?.find(a => a.action_type === type);
+                return total + parseFloat(action?.value || 0);
+            }, 0);
+            
+            // CORREÇÃO: Capturar todos os tipos de conversa
+            const conversationTypes = ['onsite_conversion.messaging_conversation_started_7d', 'onsite_conversion.messaging_first_reply', 'messaging_conversation_started_7d'];
+            const conversations = conversationTypes.reduce((total, type) => {
+                const action = insights.actions?.find(a => a.action_type === type || a.action_type.includes(type));
+                return total + parseInt(action?.value || 0);
+            }, 0);
+            
             const clicks = parseInt(insights.clicks || 0);
             const reach = parseInt(insights.reach || 0);
             const frequency = parseFloat(insights.frequency || 0);
@@ -110,56 +127,75 @@ class DataProcessor {
         // Agregar métricas nos níveis de adset e campanha
         Object.values(campaigns).forEach(campaign => {
             let campaignTotalImpressions = 0;
+            let campaignTotalClicks = 0;
+            // NOTA: Reach não pode ser somado corretamente - usamos o maior valor como estimativa
 
             Object.values(campaign.adsets).forEach(adset => {
-                let adsetImpressions = 0;
-                let adsetCTRSum = 0;
-                let adsetAdCount = 0;
+                let adsetTotalImpressions = 0;
+                let adsetTotalClicks = 0;
+                let adsetMaxReach = 0; // Reach não pode ser somado
 
                 adset.ads.forEach(ad => {
                     adset.spend += ad.spend;
                     adset.purchases += ad.purchases;
                     adset.revenue += ad.revenue;
                     adset.conversations += ad.conversations;
-                    adset.clicks += ad.clicks;
-                    adset.reach += ad.reach;
-                    adsetImpressions += ad.impressions;
-                    adsetCTRSum += ad.ctr;
-                    adsetAdCount++;
+                    adsetTotalClicks += ad.clicks;
+                    adsetTotalImpressions += ad.impressions;
+                    // CORREÇÃO: Usar o maior reach como estimativa (não somar)
+                    adsetMaxReach = Math.max(adsetMaxReach, ad.reach);
                 });
 
-                // Calcular médias para o adset
-                if (adsetAdCount > 0) {
-                    adset.ctr = adsetCTRSum / adsetAdCount;
-                }
-                if (adsetImpressions > 0 && adset.reach > 0) {
-                    adset.frequency = adsetImpressions / adset.reach;
-                }
-                adset.impressions = adsetImpressions;
+                // CORREÇÃO: Usar valores agregados ao invés de médias
+                adset.clicks = adsetTotalClicks;
+                adset.impressions = adsetTotalImpressions;
+                adset.reach = adsetMaxReach;
+                
+                // CORREÇÃO: CTR calculado corretamente como (cliques/impressões)*100
+                adset.ctr = adsetTotalImpressions > 0 
+                    ? (adsetTotalClicks / adsetTotalImpressions) * 100 
+                    : 0;
+                
+                // Frequency: impressões / alcance
+                adset.frequency = adset.reach > 0 
+                    ? adsetTotalImpressions / adset.reach 
+                    : 0;
 
                 // Calcular ROAS e CPA do adset
                 adset.roas = adset.spend > 0 ? adset.revenue / adset.spend : 0;
                 adset.cpa = adset.purchases > 0 ? adset.spend / adset.purchases : 0;
                 adset.costPerConv = adset.conversations > 0 ? adset.spend / adset.conversations : 0;
+                adset.cpc = adsetTotalClicks > 0 ? adset.spend / adsetTotalClicks : 0;
+                adset.cpm = adsetTotalImpressions > 0 ? (adset.spend / adsetTotalImpressions) * 1000 : 0;
 
                 // Agregar para a campanha
                 campaign.spend += adset.spend;
                 campaign.purchases += adset.purchases;
                 campaign.revenue += adset.revenue;
                 campaign.conversations += adset.conversations;
-                campaign.clicks += adset.clicks;
-                campaign.reach += adset.reach;
-                campaignTotalImpressions += adsetImpressions;
+                campaignTotalClicks += adsetTotalClicks;
+                campaignTotalImpressions += adsetTotalImpressions;
             });
 
+            campaign.clicks = campaignTotalClicks;
             campaign.impressions = campaignTotalImpressions;
-            if (campaignTotalImpressions > 0 && campaign.reach > 0) {
-                campaign.frequency = campaignTotalImpressions / campaign.reach;
-            }
+            // CORREÇÃO: Para campanhas, somamos reach dos adsets (estimativa)
+            campaign.reach = Object.values(campaign.adsets).reduce((max, adset) => Math.max(max, adset.reach), 0);
+            
+            // CORREÇÃO: CTR da campanha calculado corretamente
+            campaign.ctr = campaignTotalImpressions > 0 
+                ? (campaignTotalClicks / campaignTotalImpressions) * 100 
+                : 0;
+            
+            campaign.frequency = campaign.reach > 0 
+                ? campaignTotalImpressions / campaign.reach 
+                : 0;
 
             // Calcular ROAS e CPA da campanha
             campaign.roas = campaign.spend > 0 ? campaign.revenue / campaign.spend : 0;
             campaign.cpa = campaign.purchases > 0 ? campaign.spend / campaign.purchases : 0;
+            campaign.cpc = campaignTotalClicks > 0 ? campaign.spend / campaignTotalClicks : 0;
+            campaign.cpm = campaignTotalImpressions > 0 ? (campaign.spend / campaignTotalImpressions) * 1000 : 0;
         });
 
         return Object.values(campaigns);

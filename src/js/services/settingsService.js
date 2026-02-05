@@ -148,9 +148,15 @@ class SettingsService {
         // Lucro Real
         const lucroUnitarioReal = ticketMedio - custoTotalProdutoMeta;
         const lucroLiquido = lucroUnitarioReal * qtdVendida;
-        const roasReal = totalSpend > 0 ? lucroLiquido / totalSpend : 0;
-        const margemLiquida = totalRevenue > 0 ? (lucroLiquido / totalRevenue) * 100 : 0;
+        
+        // CORREÇÃO: ROAS é sempre Revenue/Spend (padrão do mercado)
+        const roasFacebook = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+        
+        // ROI Real considera o lucro líquido
         const roiReal = totalSpend > 0 ? (lucroLiquido / totalSpend) * 100 : 0;
+        
+        // Margem sobre receita
+        const margemLiquida = totalRevenue > 0 ? (lucroLiquido / totalRevenue) * 100 : 0;
 
         return {
             custoFixoUnitMeta,
@@ -161,9 +167,11 @@ class SettingsService {
             ticketMedio,
             lucroUnitarioReal,
             lucroLiquido,
-            roasReal,
+            roasFacebook,      // ROAS padrão (Revenue/Spend)
+            roiReal,           // ROI real (Lucro/Spend * 100)
             margemLiquida,
-            roiReal
+            // Manter precoMedioVenda para uso em cálculos derivados
+            precoMedioVenda
         };
     }
 
