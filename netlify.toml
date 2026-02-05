@@ -1,7 +1,7 @@
 [build]
   publish = "."
   functions = "netlify/functions"
-  command = "echo 'Build completed'"
+  command = "npm run build"
 
 # Configurações de ambiente
 [build.environment]

@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos customizados */
+body { 
+    font-family: 'Inter', sans-serif; 
+}
+
+.kpi-card:hover { 
+    transform: scale(1.03); 
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); 
+}
+
+.btn-action:hover { 
+    transform: scale(1.05); 
+}
+
+.btn-action:disabled { 
+    opacity: 0.5; 
+    cursor: not-allowed; 
+}
+
+.budget-input { 
+    width: 80px; 
+    text-align: right; 
+}
+
+[data-accordion-content] { 
+    max-height: 0; 
+    overflow: hidden; 
+    transition: max-height 0.3s ease-out; 
+}
+
+.thumbnail-placeholder {
+    width: 80px; 
+    height: 80px;
+    background-color: #334155; /* slate-700 */
+    border-radius: 0.5rem; /* rounded-lg */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8; /* slate-400 */
+}
+
+.dark-input {
+    background-color: #334155;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+
+.dark-input:focus {
+    border-color: #4f46e5;
+    --tw-ring-color: #4f46e5;
+}
+
+.inner-scroll-container {
+    max-height: 65vh;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.inner-scroll-container::-webkit-scrollbar { 
+    width: 8px; 
+}
+
+.inner-scroll-container::-webkit-scrollbar-track { 
+    background: #1e293b; 
+}
+
+.inner-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #475569;
+    border-radius: 4px;
+    border: 2px solid #1e293b;
+}
+
+.inner-scroll-container::-webkit-scrollbar-thumb:hover { 
+    background-color: #64748b; 
+}
+
+.chart-container {
+    background-color: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+}
+
+/* Animações de loading */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Nav link active state */
+.nav-link.active {
+    @apply bg-blue-600/20 text-blue-300;
+}

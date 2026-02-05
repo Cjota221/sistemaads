@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CJOTA Analytics - Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS Compilado -->
+    <link rel="stylesheet" href="/src/css/tailwind.css">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; }
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
@@ -36,7 +40,7 @@
 
             <!-- Botão de Login -->
             <button 
-                onclick="window.location.href='/.netlify/functions/auth/login'"
+                onclick="window.location.href='/.netlify/functions/auth-login'"
                 class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 transition duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 group"
             >
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
